@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Онлайн-бібліотека підручників</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#2563eb;--primary-dark:#1e40af;--bg:#f8fafc;--card-bg:#ffffff;--text:#1e293b;--text-light:#64748b;--border:#e2e8f0;--radius:16px;--shadow:0 4px 20px rgba(0,0,0,0.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+.container{max-width:1200px;margin:0 auto;padding:0 1.5rem}
+header{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:white;padding:3rem 1.5rem;text-align:center;box-shadow:0 4px 15px rgba(37,99,235,0.3)}
+header h1{font-size:2.5rem;margin-bottom:0.5rem;font-weight:700}
+header p{font-size:1.1rem;opacity:0.9}
+.controls{display:flex;gap:1rem;margin:2rem 0;flex-wrap:wrap}
+.controls input,.controls select{padding:0.9rem 1.2rem;border:2px solid var(--border);border-radius:12px;font-size:1rem;font-family:inherit;outline:none;transition:border-color 0.2s;background:white}
+.controls input{flex:1;min-width:250px}
+.controls input:focus,.controls select:focus{border-color:var(--primary)}
+.books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem;margin-bottom:4rem}
+.book-card{background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;cursor:pointer;display:flex;flex-direction:column}
+.book-card:hover{transform:translateY(-5px);box-shadow:0 8px 30px rgba(0,0,0,0.1)}
+.book-cover{height:200px;background:linear-gradient(135deg,#e0e7ff,#c7d2fe);display:flex;align-items:center;justify-content:center;font-size:4rem;color:var(--primary);position:relative}
+.book-cover img{width:100%;height:100%;object-fit:cover}
+.book-info{padding:1.2rem;flex:1;display:flex;flex-direction:column}
+.book-info h3{font-size:1.1rem;margin-bottom:0.3rem;color:var(--text)}
+.book-info .author{color:var(--text-light);font-size:0.9rem;margin-bottom:0.8rem}
+.book-info .badge{display:inline-block;background:#dbeafe;color:var(--primary-dark);padding:0.2rem 0.6rem;border-radius:6px;font-size:0.75rem;font-weight:600;margin-bottom:0.8rem}
+.book-info .btn{margin-top:auto;background:var(--primary);color:white;border:none;padding:0.7rem 1rem;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;transition:background 0.2s;text-align:center}
+.book-info .btn:hover{background:var(--primary-dark)}
+.modal{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.8);backdrop-filter:blur(5px)}
+.modal.active{display:flex;align-items:center;justify-content:center}
+.modal-content{position:relative;width:90%;height:90%;background:white;border-radius:var(--radius);overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.close-btn{position:absolute;top:10px;right:20px;font-size:2rem;color:#333;cursor:pointer;z-index:10;background:white;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.2)}
+.close-btn:hover{background:#f1f5f9}
+#pdfViewer{width:100%;height:100%}
+footer{background:var(--text);color:white;padding:2rem 0;text-align:center}
+footer p{opacity:0.8;font-size:0.9rem;margin:0.3rem 0}
+@media(max-width:600px){header h1{font-size:1.8rem}.controls{flex-direction:column}.books-grid{grid-template-columns:1fr}.modal-content{width:95%;height:85%}}
+</style>
+</head>
+<body>
+
+<header>
+<div class="container">
+<h1>📚 Онлайн-бібліотека</h1>
+<p>Підручники для 6 класу Нової української школи</p>
+</div>
+</header>
+
+<main class="container">
+<section class="controls">
+<input type="text" id="searchInput" placeholder="🔍 Пошук за назвою або автором...">
+<select id="categoryFilter">
+<option value="all">Усі предмети</option>
+<option value="math">Математика</option>
+<option value="ukr">Українська мова</option>
+<option value="history">Історія</option>
+</select>
+</section>
+<section class="books-grid" id="booksGrid"></section>
+</main>
+
+<div class="modal" id="pdfModal">
+<div class="modal-content">
+<span class="close-btn" id="closeModal">&times;</span>
+<iframe id="pdfViewer" src="" frameborder="0"></iframe>
+</div>
+</div>
+
+<footer>
+<div class="container">
+<p>© 2024 Онлайн-бібліотека. Створено на Vercel.</p>
+<p>Підручник: Олександр Істер. Математика 6 клас (у 2-х частинах), 2023.</p>
+</div>
+</footer>
+
+<script>
+const books=[
+{id:1,title:"Математика 6 клас. Частина 1",author:"Олександр Істер",category:"math",cover:"📕",pdfUrl:"https://drive.google.com/file/d/1YOUR_FILE_ID_1/preview"},
+{id:2,title:"Математика 6 клас. Частина 2",author:"Олександр Істер",category:"math",cover:"📘",pdfUrl:"https://drive.google.com/file/d/1YOUR_FILE_ID_2/preview"},
+{id:3,title:"Українська мова 6 клас",author:"Заболотний О.В.",category:"ukr",cover:"📗",pdfUrl:"https://drive.google.com/file/d/1YOUR_FILE_ID_3/preview"},
+{id:4,title:"Історія України 6 клас",author:"Власов В.С.",category:"history",cover:"📙",pdfUrl:"https://drive.google.com/file/d/1YOUR_FILE_ID_4/preview"}
+];
+
+const categories={math:"Математика",ukr:"Українська мова",history:"Історія"};
+
+const booksGrid=document.getElementById('booksGrid');
+const searchInput=document.getElementById('searchInput');
+const categoryFilter=document.getElementById('categoryFilter');
+const pdfModal=document.getElementById('pdfModal');
+const pdfViewer=document.getElementById('pdfViewer');
+const closeModal=document.getElementById('closeModal');
+
+function renderBooks(filteredBooks){
+booksGrid.innerHTML='';
+if(filteredBooks.length===0){
+booksGrid.innerHTML='<p style="grid-column:1/-1;text-align:center;color:#64748b;padding:2rem;">📭 Нічого не знайдено</p>';
+return;
+}
+filteredBooks.forEach(book=>{
+const card=document.createElement('div');
+card.className='book-card';
+card.innerHTML=`<div class="book-cover">${book.cover}</div><div class="book-info"><span class="badge">${categories[book.category]||'Інше'}</span><h3>${book.title}</h3><p class="author">${book.author}</p><button class="btn" data-id="${book.id}">Відкрити PDF</button></div>`;
+booksGrid.appendChild(card);
+});
+document.querySelectorAll('.book-card .btn').forEach(btn=>{
+btn.addEventListener('click',(e)=>{
+e.stopPropagation();
+const bookId=parseInt(btn.dataset.id);
+const book=books.find(b=>b.id===bookId);
+openPdf(book.pdfUrl);
+});
+});
+}
+
+function openPdf(url){
+let embedUrl=url;
+if(url.includes('drive.google.com')){
+embedUrl=url.replace('/view','/preview');
+}
+pdfViewer.src=embedUrl;
+pdfModal.classList.add('active');
+}
+
+closeModal.addEventListener('click',()=>{
+pdfModal.classList.remove('active');
+pdfViewer.src='';
+});
+
+window.addEventListener('click',(e)=>{
+if(e.target===pdfModal){
+pdfModal.classList.remove('active');
+pdfViewer.src='';
+}
+});
+
+function filterBooks(){
+const searchTerm=searchInput.value.toLowerCase().trim();
+const category=categoryFilter.value;
+const filtered=books.filter(book=>{
+const matchesSearch=book.title.toLowerCase().includes(searchTerm)||book.author.toLowerCase().includes(searchTerm);
+const matchesCategory=category==='all'||book.category===category;
+return matchesSearch&&matchesCategory;
+});
+renderBooks(filtered);
+}
+
+searchInput.addEventListener('input',filterBooks);
+categoryFilter.addEventListener('change',filterBooks);
+renderBooks(books);
+</script>
+
+</body>
+</html>
