@@ -40,137 +40,72 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
 (function () {
     'use strict';
 
-    // Текст для других баек оставляем прямо в коде
-    var BAYKA_SHCHUKA = `Один мордатий Кіт до Щуки учащав;
-Пройдисвітка зубата знала,
-Чого хвостатий кум бажав:
-До берега частенько припливала
-І щиро куманька свого
-Карасиками шанувала,
-А Кіт і не цуравсь сього,
-Бо жирная мишва вже приїдаться стала.
-Раз каже Щука так йому:
-- Возьми мене мишей ловити.-
-Дивуючись, кум глянув на куму
-Та й засміявсь: - Надумалась дуріти!
-Не навтішаєшся таким добром;
-Карась і сам у рот тобі ускочить,
-А хитрая мишва так іноді морочить,
-Що треба буть мудрованим Котом,
-Щоб висидіть, неначе неживому,
-І оком не моргнуть;
-Буває, що всю ніч стрибаєш по-дурному
-І ні однісінькій не вдасться в'яз звернуть.
-А Щука на своє хилила:
-- Ет, вигадки! Велике діло миш;
-На що ярші - і тих не раз ловила…
-Піду-бо я! Хоч раз мене потіш.-
-Ніхто не бачив, тільки зорі,
-Як ласий кум і шустрая кума
-Через садок попхались крадькома
-І зачинились у коморі.
-Кіт на полицю зараз же стрибнув,
-Бо там давненько був,
-А Щука у куточку
-Сховалася за бочку.
-От перед світом Кіт довідаться біжить -
-Аж Щука без хвоста лежить:
-Прокляті пацюки одгризли.
-- Бач, серденько, в яку біду ми влізли!
-Хвоста й нема…
-Ніхто не винен - ти сама,-
-Мурличе Кіт,- се справді штука!
-Ну, що ж його тепер робить?
-- Голубчику, рятуй! - тут простогнала Щука.
-На світі дай мені пожить…
-У став мерщій пусти мене, мій друже,
-До світа тут не доживу…
-Хоч і нема хвоста - байдуже,
-Як-небудь попливу.-
-Побачив Кіт, що діло препогане,
-Що, може, і йому вона в пригоді стане,-
-Узяв куму на спину примостив,
-Поніс до ставу та й пустив.
-Пішла між рибами про неї всюди слава;
-Сміються всі, карасики найбільш:
-- Догралася! Тепер мовчи та диш,
-Безхвостая проява!
-На світі живучи, довіку вчись;
-Що наробила здуру Щука -
-Се всякому наука:
-Чого не тямиш - не берись.`;
-
-    var BAYKA_KIT_NA_GRUSHI = `Кіт вік живе на штуках:
-На грушу вибравсь, під вершок.
-А друг його, кудлатий Полкан,
-Під грушею сидить і стежить, де дружок.
-- Ой любий мій! - гукає друг
-До Пса. -
-Іди поглянь на виднокруг:
-Невидана краса! -
-
-А Пес: - Якби була там ковбаса!..
-- Глянь: за селом - лани широкополі,
-Побігла лісосмуга в зелення,
-Працюють люди на роздоллі,
-Над ними жайворон співає в сяйві дня. -
-
-Пес позіхнув: - Пісні
-Не по мені!..
-- А он в селі, в подвір'ї у Миколи,
-Горить вогонь. Свиню хазяїн коле,
-Від щедрої руки
-Собакам кида кендюхи й кишки. -
-
-- Де? - Пса ошпарило окропом.
-Через горби помчав галопом.
-
-Ні висота, ні далина не вабить Пса,
-Відгомону в душі у нього не знаходять
-Ні труд, ні співи, ні краса, -
-Кишки і кендюхи з ума одразу зводять.`;
-
     var BOOKS = [
         {
-            id: 6,
+            id: 1,
             title: "Українська мова",
             author: "Літвінова І. Ф.",
-            category: "textbooks",
+            category: "ukr-mova",
             type: "pdf",
             cover: "https://detmir.com.ua/wa-data/public/shop/products/41/26/492641/images/153662/153662.970.jpg",
             downloadUrl: "ukrmova-6-klas-litvinova.pdf",
             viewUrl: "ukrmova-6-klas-litvinova.pdf"
         },
         {
+            id: 7,
+            title: "Українська література",
+            author: "Калинич О.",
+            category: "ukr-lit",
+            type: "pdf",
+            cover: "https://shkola.in.ua/images/pictures/Pidruchnyky/6-klas/Ukrajinska-literatura/Ukrainska-literatura-6-klas-Kalynych-2023.jpg",
+            downloadUrl: "ukralit-6-klas-kalynych.pdf",
+            viewUrl: "ukralit-6-klas-kalynych.pdf"
+        },
+        {
+            id: 8,
+            title: "Досліджуємо історію",
+            author: "Васильків І.",
+            category: "history",
+            type: "pdf",
+            cover: "https://aston.te.ua/userfiles/image/d_s6_vasilk_v_obkladinka_1_300.jpg",
+            downloadUrl: "doslidzhuiemo-istoriiu-6-klas-vasylkiv.pdf",
+            viewUrl: "doslidzhuiemo-istoriiu-6-klas-vasylkiv.pdf"
+        },
+        {
             id: 3,
             title: "Голуб і Лелека",
             author: "Микита Годованець",
-            category: "ukr-lit",
+            category: "bayky",
             type: "text",
             cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTx-J878tNkF5Uo7mpGVxnFm5RNMk8vabH0sxXDKSEnBcVWBl-N6VBOH9yT&s=10",
-            fileUrl: "baika1.txt" // <--- Указываем файл вместо textContent
+            fileUrl: "baika1.js"
         },
         {
             id: 4,
             title: "Щука й Кіт",
             author: "Леонід Глібов",
-            category: "ukr-lit",
+            category: "bayky",
             type: "text",
             cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQQKu_qFYllJ68tTNNAwunoj8_DTugmBtCVqs3nU_zftOuDPZm1m_5XmsMh&s=10",
-            textContent: BAYKA_SHCHUKA
+            fileUrl: "baika2.js"
         },
         {
             id: 5,
             title: "Кіт на груші",
             author: "Микита Годованець",
-            category: "ukr-lit",
+            category: "bayky",
             type: "text",
             cover: "https://i.ibb.co/8L55yRB1/Curious-Cat-in-a-Pear-Tree.png",
-            textContent: BAYKA_KIT_NA_GRUSHI
+            fileUrl: "baika3.js"
         }
     ];
 
-    var CATEGORIES = { textbooks: "Підручник", "ukr-lit": "Байка" };
+    var CATEGORIES = { 
+        "ukr-mova": "Укр мова",
+        "ukr-lit": "Укр-літ",
+        history: "Історія",
+        bayky: "Байка" 
+    };
 
     function escapeHtml(str) {
         return String(str)
@@ -206,12 +141,19 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             ".controls input,.controls select{width:100%;padding:14px 16px 14px 44px;border:1px solid var(--border);border-radius:12px;font-size:0.95rem;font-family:inherit;background:var(--card-bg);color:var(--text-main);transition:all 0.2s ease;box-shadow:var(--shadow-sm);appearance:none;}",
             ".controls select{padding-left:16px;cursor:pointer;width:auto;min-width:200px;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 16px center;background-size:16px;padding-right:40px;}",
             ".controls input:focus,.controls select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,0.1);}",
-            ".books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;margin-bottom:64px;}",
-            ".book-card{background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column;transition:all 0.3s ease;position:relative;}",
+            ".books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;margin-bottom:64px;align-items:stretch;}",
+            ".book-card{background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column;transition:all 0.3s ease;position:relative;height:100%;}",
             ".book-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-xl);border-color:transparent;}",
-            ".book-cover{height:220px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}",
-            ".book-cover img{width:100%;height:100%;object-fit:cover;transition:transform 0.5s ease;cursor:zoom-in;}",
+            
+            /* Підручники: білий фон, object-fit contain */
+            ".book-cover{height:220px;background:#ffffff;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:12px;flex-shrink:0;}",
+            ".book-cover img{width:100%;height:100%;object-fit:contain;transition:transform 0.5s ease;cursor:zoom-in;}",
             ".book-card:hover .book-cover img{transform:scale(1.05);}",
+            
+            /* Байки: сірий фон, картинка повністю заповнює блок (як було раніше) */
+            ".book-card[data-cat='bayky'] .book-cover{background:#f3f4f6;padding:0;}",
+            ".book-card[data-cat='bayky'] .book-cover img{object-fit:cover;}",
+
             "#imageViewer{display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,0.95);align-items:center;justify-content:center;padding:16px;cursor:zoom-out;}",
             "#imageViewer.active{display:flex;}",
             "#imageViewer img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;}",
@@ -265,8 +207,10 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             '      <input type="text" id="searchInput" placeholder="Пошук">',
             '    </div>',
             '    <select id="categoryFilter">',
-            '      <option value="textbooks">Підручники</option>',
-            '      <option value="ukr-lit">Байка</option>',
+            '      <option value="ukr-mova">Укр мова</option>',
+            '      <option value="ukr-lit">Укр-літ</option>',
+            '      <option value="history">Історія</option>',
+            '      <option value="bayky">Байки</option>',
             '    </select>',
             '  </section>',
             '  <section class="books-grid" id="booksGrid"></section>',
@@ -323,6 +267,8 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             filteredBooks.forEach(function (book) {
                 var card = document.createElement('div');
                 card.className = 'book-card';
+                // Додаємо атрибут категорії, щоб стилізувати байки та підручники окремо
+                card.setAttribute('data-cat', book.category);
 
                 var pickerHtml = '';
                 var actionButtons = '';
@@ -435,29 +381,24 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
                 var tb = BOOKS.find(function (b) { return b.id === Number(textBtn.dataset.id); });
                 if (!tb) return;
 
-                // Если у книги указан файл, скачиваем его
-                if (tb.fileUrl) {
-                    modalTitle.textContent = tb.title;
-                    pdfModal.classList.add('active');
-                    document.body.style.overflow = 'hidden';
-                    pdfViewer.style.display = 'none';
-                    textViewer.style.display = 'block';
-                    textContentWrapper.innerHTML = '<p style="text-align:center; color:#6b7280;">Завантаження...</p>';
+                modalTitle.textContent = tb.title;
+                pdfModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                pdfViewer.style.display = 'none';
+                textViewer.style.display = 'block';
+                textContentWrapper.innerHTML = '<p style="text-align:center; color:#6b7280;">Завантаження...</p>';
 
-                    fetch(tb.fileUrl)
-                        .then(response => {
-                            if (!response.ok) throw new Error('Помилка завантаження');
-                            return response.text();
-                        })
-                        .then(text => {
-                            openText(text, tb.title, tb.author);
-                        })
-                        .catch(err => {
-                            textContentWrapper.innerHTML = '<p style="text-align:center; color:#ef4444;">Не вдалося завантажити текст. Перевірте, чи існує файл ' + tb.fileUrl + ' та чи запущено сайт через сервер.</p>';
-                        });
-                } else {
-                    openText(tb.textContent, tb.title, tb.author);
-                }
+                fetch(tb.fileUrl)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Помилка завантаження');
+                        return response.text();
+                    })
+                    .then(text => {
+                        openText(text, tb.title, tb.author);
+                    })
+                    .catch(err => {
+                        textContentWrapper.innerHTML = '<p style="text-align:center; color:#ef4444; padding: 20px; font-weight: 500;">Не вдалося</p>';
+                    });
             }
         });
 
@@ -481,7 +422,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
 
         searchInput.addEventListener('input', filterBooks);
         categoryFilter.addEventListener('change', filterBooks);
-        categoryFilter.value = 'textbooks';
+        categoryFilter.value = 'ukr-mova';
         filterBooks();
     }
 
