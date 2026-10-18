@@ -7,626 +7,40 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-
-<!-- Скрываем всё до проверки IP. Если JS отключён — тоже останется скрытым (fail-closed) -->
 <style>
-html, body { visibility: hidden !important; background: #111827; }
-</style>
-
-<script>
-/* ============================================================
-   БЛОКИРОВКА ПО IP — запускается ДО рендера body
-   Логика fail-closed: любой сбой = блокировка
-   ============================================================ */
-(function () {
-    'use strict';
-
-    var BLOCK_HTML = '<!DOCTYPE html>' +
-'<html lang="uk"><head><meta charset="UTF-8">' +
-'<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-'<title>Доступ заблоковано</title>' +
-'<style>' +
-'html,body{height:100%;margin:0;visibility:visible!important;}' +
-'body{background:#111827;color:#fff;font-family:system-ui,-apple-system,sans-serif;' +
-'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
-'text-align:center;padding:20px;box-sizing:border-box;}' +
-'h1{font-size:3rem;font-weight:800;color:#ef4444;margin:0 0 16px;letter-spacing:-1px;}' +
-'p{font-size:1.5rem;color:#9ca3af;margin:0;}' +
-'.sub{font-size:1rem;margin-top:24px;opacity:0.6;}' +
-'@media(max-width:600px){h1{font-size:2rem;}p{font-size:1.1rem;}}' +
-'</style></head><body>' +
-'<h1>ДОСТУП ЗАБЛОКОВАНО</h1>' +
-'<p>Допубачення</p>' +
-'<p class="sub">Ваш регіон не підтримується.</p>' +
-'</body></html>';
-
-    var blocked = false;
-
-    function blockAndStop() {
-        if (blocked) return;
-        blocked = true;
-        try {
-            document.open();
-            document.write(BLOCK_HTML);
-            document.close();
-        } catch (e) {
-            // Крайний случай: хотя бы убираем контент
-            document.documentElement.innerHTML = '';
-            location.replace('about:blank');
-        }
-    }
-
-    function unlock() {
-        if (blocked) return;
-        // Делаем body видимым
-        var html = document.documentElement;
-        var body = document.body;
-        if (html) html.style.visibility = 'visible';
-        if (body) body.style.visibility = 'visible';
-        // На случай, если body ещё не готов — ставим обработчик
-        document.addEventListener('DOMContentLoaded', function () {
-            document.documentElement.style.visibility = 'visible';
-            if (document.body) document.body.style.visibility = 'visible';
-        }, { once: true });
-    }
-
-    // Жёсткий таймаут: если за 3с не получили ответ — блокируем
-    var killed = false;
-    var killTimer = setTimeout(function () {
-        killed = true;
-        blockAndStop();
-    }, 3000);
-
-    function checkIp(url, extractCountry) {
-        return fetch(url, { cache: 'no-store', credentials: 'omit' })
-            .then(function (r) {
-                if (!r.ok) throw new Error('HTTP ' + r.status);
-                return r.json();
-            })
-            .then(function (data) {
-                var cc = extractCountry(data);
-                if (!cc) throw new Error('no country');
-                return cc;
-            });
-    }
-
-    function decide(countryCode) {
-        if (killed || blocked) return;
-        clearTimeout(killTimer);
-        if (String(countryCode).toUpperCase() === 'RU') {
-            blockAndStop();
-        } else {
-            unlock();
-        }
-    }
-
-    // Основной сервис → резервный
-    checkIp('https://ipapi.co/json/', function (d) { return d.country_code; })
-        .then(decide)
-        .catch(function () {
-            // Резервный сервис
-            return checkIp('https://ipwho.is/', function (d) { return d.country_code; })
-                .then(decide)
-                .catch(function () {
-                    // Оба упали → fail-closed → блокируем
-                    clearTimeout(killTimer);
-                    blockAndStop();
-                });
-        });
-})();
-</script>
-
-<style>
-:root {
-    --primary: #4f46e5;
-    --primary-hover: #4338ca;
-    --bg: #f9fafb;
-    --card-bg: #ffffff;
-    --text-main: #111827;
-    --text-muted: #6b7280;
-    --border: #e5e7eb;
-    --radius: 20px;
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-}
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
+html, body { height: 100%; margin: 0; }
 body {
-    font-family: 'Manrope', sans-serif;
-    background-color: var(--bg);
-    color: var(--text-main);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 24px;
-}
-
-header {
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    padding: 16px 0;
-}
-
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.logo {
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    letter-spacing: -0.5px;
-}
-
-.controls {
-    display: flex;
-    gap: 16px;
-    margin: 32px 0;
-    flex-wrap: wrap;
-}
-
-.search-wrapper {
-    flex: 1;
-    min-width: 280px;
-    position: relative;
-}
-
-.search-wrapper svg {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    width: 20px;
-    height: 20px;
-}
-
-.controls input, .controls select {
-    width: 100%;
-    padding: 14px 16px 14px 44px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    font-size: 0.95rem;
-    font-family: inherit;
-    background: var(--card-bg);
-    color: var(--text-main);
-    transition: all 0.2s ease;
-    box-shadow: var(--shadow-sm);
-    appearance: none;
-}
-
-.controls select {
-    padding-left: 16px;
-    cursor: pointer;
-    width: auto;
-    min-width: 200px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 16px center;
-    background-size: 16px;
-    padding-right: 40px;
-}
-
-.controls input:focus, .controls select:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-}
-
-.books-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 24px;
-    margin-bottom: 64px;
-}
-
-.book-card {
-    background: var(--card-bg);
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-.book-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-xl);
-    border-color: transparent;
-}
-
-.book-cover {
-    height: 220px;
-    background: #f3f4f6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.book-cover img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.5s ease;
-}
-
-.book-card:hover .book-cover img {
-    transform: scale(1.05);
-}
-
-.book-cover img {
-    cursor: zoom-in;
-}
-
-#imageViewer {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 1100;
-    background: rgba(0, 0, 0, 0.95);
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    cursor: zoom-out;
-}
-
-#imageViewer.active {
-    display: flex;
-}
-
-#imageViewer img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    border-radius: 8px;
-}
-
-#imageViewer .close-btn {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-}
-
-.book-cover .emoji-fallback {
-    font-size: 5rem;
-    opacity: 0.8;
-}
-
-.book-info {
-    padding: 24px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.badge {
-    align-self: flex-start;
-    background: #eef2ff;
-    color: var(--primary);
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 12px;
-}
-
-.book-info h3 {
-    font-size: 1.15rem;
-    font-weight: 700;
-    line-height: 1.4;
-    margin-bottom: 8px;
-    color: var(--text-main);
-}
-
-.book-info .author {
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    margin-bottom: 20px;
-}
-
-.picker {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 12px;
-}
-
-.picker label {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.picker input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    font-family: inherit;
-    font-size: 0.95rem;
-    color: var(--text-main);
-    background: #fff;
-}
-
-.picker input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-}
-
-.hint {
-    font-size: 0.85rem;
-    color: #b45309;
-    min-height: 0;
-    margin-bottom: 8px;
-}
-
-.hint:empty {
-    display: none;
-}
-
-.actions {
-    display: flex;
-    gap: 12px;
-    margin-top: auto;
-}
-
-.btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px;
-    border-radius: 12px;
-    border: none;
-    font-family: inherit;
-    font-weight: 600;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    flex: 1;
-}
-
-.btn-primary {
-    background: var(--primary);
+    background: #111827;
     color: white;
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-}
-
-.btn-primary:hover {
-    background: var(--primary-hover);
-    transform: translateY(-1px);
-}
-
-.btn-download {
-    background: #f3f4f6;
-    color: var(--text-main);
-    flex: 0 0 auto;
-    padding: 12px 16px;
-}
-
-.btn-download:hover {
-    background: #e5e7eb;
-}
-
-.btn-read {
-    background: #dcfce7;
-    color: #166534;
-}
-
-.btn-read:hover {
-    background: #bbf7d0;
-}
-
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(17, 24, 39, 0.9);
-    backdrop-filter: blur(8px);
-    z-index: 1000;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.modal.active {
+    font-family: system-ui, sans-serif;
     display: flex;
     flex-direction: column;
-    opacity: 1;
-}
-
-.modal-header {
-    background: rgba(31, 41, 55, 0.95);
-    color: white;
-    padding: 16px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-.modal-title {
-    font-weight: 600;
-    font-size: 1rem;
-}
-
-.close-btn {
-    background: rgba(255,255,255,0.1);
-    border: none;
-    color: white;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
-    transition: background 0.2s;
-}
-
-.close-btn:hover {
-    background: rgba(239, 68, 68, 0.8);
-}
-
-#pdfViewer {
-    flex: 1;
-    width: 100%;
-    border: none;
-    background: #374151;
-}
-
-#textViewer {
-    flex: 1;
-    width: 100%;
-    overflow-y: auto;
-    background: #fdfbf7;
-    padding: 60px 20px;
-    display: none;
-}
-
-.text-content-wrapper {
-    max-width: 700px;
-    margin: 0 auto;
-    font-family: 'Merriweather', serif;
-    font-size: 1.2rem;
-    line-height: 1.9;
-    color: #1f2937;
-}
-
-.text-content-wrapper h2 {
-    font-family: 'Manrope', sans-serif;
-    font-size: 2.2rem;
-    font-weight: 800;
     text-align: center;
-    color: #111827;
-    margin-bottom: 8px;
+    padding: 20px;
 }
-
-.text-content-wrapper .text-author {
-    font-family: 'Manrope', sans-serif;
-    text-align: center;
-    color: #6b7280;
-    font-size: 1rem;
-    font-weight: 500;
-    margin-bottom: 40px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.text-content-wrapper p {
-    margin-bottom: 1.2rem;
-    white-space: pre-wrap;
-}
-
-footer {
-    background: white;
-    border-top: 1px solid var(--border);
-    padding: 32px 0;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-}
-
-@media (max-width: 768px) {
-    .header-content { flex-direction: column; gap: 16px; }
-    .controls { flex-direction: column; }
-    .controls select { width: 100%; }
-    .text-content-wrapper { font-size: 1.05rem; padding: 0 10px; }
-    .text-content-wrapper h2 { font-size: 1.8rem; }
-}
+h1 { font-size: 3rem; font-weight: 800; color: #ef4444; margin: 0 0 16px; letter-spacing: -1px; }
+p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
+.sub { font-size: 1rem; margin-top: 24px; opacity: 0.6; }
+#appRoot { display: none; }
 </style>
 </head>
 <body>
 
-<header>
-    <div class="container header-content">
-        <div class="logo">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-            Бібліотека
-        </div>
-    </div>
-</header>
-
-<main class="container">
-    <section class="controls">
-        <div class="search-wrapper">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" id="searchInput" placeholder="Пошук">
-        </div>
-        <select id="categoryFilter">
-            <option value="textbooks">Підручники</option>
-            <option value="ukr-lit">Українська література</option>
-        </select>
-    </section>
-    <section class="books-grid" id="booksGrid"></section>
-</main>
-
-<div class="modal" id="pdfModal">
-    <div class="modal-header">
-        <span class="modal-title" id="modalTitle">Перегляд</span>
-        <button class="close-btn" id="closeModal" aria-label="Закрити">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
-    </div>
-    <iframe id="pdfViewer" src=""></iframe>
-    <div id="textViewer">
-        <div class="text-content-wrapper" id="textContentWrapper"></div>
-    </div>
+<div id="blockScreen">
+    <h1>ДОСТУП ЗАБЛОКОВАНО</h1>
+    <p>Допубачення</p>
+    <p class="sub">Ваш регіон не підтримується.</p>
 </div>
 
-<div id="imageViewer">
-    <img id="fullImage" src="" alt="">
-    <button class="close-btn" id="closeImage" aria-label="Закрити">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-    </button>
-</div>
-
-<footer>
-    <div class="container">
-        <p>&copy; 2026 Бібліотека. Усі матеріали використовуються з освітньою метою.</p>
-    </div>
-</footer>
+<div id="appRoot"></div>
 
 <script>
-/* ============================================================
-   Основна логіка бібліотеки.
-   Виконується тільки якщо IP-перевірка вище не заблокувала документ
-   (у разі блокування document.write вже замінив документ,
-   і цей скрипт фізично не виконається у старому документі).
-   ============================================================ */
+(function () {
+    'use strict';
 
-const baykaGolubText = `Якось-то навесні,
+    var BAYKA_GOLUB = `Якось-то навесні,
 Коли настали теплі дні,
 Лелека з вирію прилинув
 На дороге гніздо своє,
@@ -658,7 +72,7 @@ const baykaGolubText = `Якось-то навесні,
 І ти летиш, як з вирію Лелека
 В гніздо своє.`;
 
-const baykaShchukaText = `Один мордатий Кіт до Щуки учащав;
+    var BAYKA_SHCHUKA = `Один мордатий Кіт до Щуки учащав;
 Пройдисвітка зубата знала,
 Чого хвостатий кум бажав:
 До берега частенько припливала
@@ -717,7 +131,7 @@ const baykaShchukaText = `Один мордатий Кіт до Щуки уча�
 Се всякому наука:
 Чого не тямиш - не берись.`;
 
-const baykaKitNaGrushiText = `Кіт вік живе на штуках:
+    var BAYKA_KIT_NA_GRUSHI = `Кіт вік живе на штуках:
 На грушу вибравсь, під вершок.
 А друг його, кудлатий Полкан,
 Під грушею сидить і стежить, де дружок.
@@ -747,237 +161,350 @@ const baykaKitNaGrushiText = `Кіт вік живе на штуках:
 Ні труд, ні співи, ні краса, -
 Кишки і кендюхи з ума одразу зводять.`;
 
-const books = [
-    {
-        id: 6,
-        title: "Українська мова",
-        author: "Літвінова І. Ф.",
-        category: "textbooks",
-        type: "pdf",
-        cover: "https://detmir.com.ua/wa-data/public/shop/products/41/26/492641/images/153662/153662.970.jpg",
-        downloadUrl: "ukrmova-6-klas-litvinova.pdf",
-        viewUrl: "ukrmova-6-klas-litvinova.pdf"
-    },
-    {
-        id: 3,
-        title: "Голуб і Лелека",
-        author: "Микита Годованець",
-        category: "ukr-lit",
-        type: "text",
-        cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTx-J878tNkF5Uo7mpGVxnFm5RNMk8vabH0sxXDKSEnBcVWBl-N6VBOH9yT&s=10",
-        textContent: baykaGolubText
-    },
-    {
-        id: 4,
-        title: "Щука й Кіт",
-        author: "Леонід Глібов",
-        category: "ukr-lit",
-        type: "text",
-        cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQQKu_qFYllJ68tTNNAwunoj8_DTugmBtCVqs3nU_zftOuDPZm1m_5XmsMh&s=10",
-        textContent: baykaShchukaText
-    },
-    {
-        id: 5,
-        title: "Кіт на груші",
-        author: "Микита Годованець",
-        category: "ukr-lit",
-        type: "text",
-        cover: "https://i.ibb.co/8L55yRB1/Curious-Cat-in-a-Pear-Tree.png",
-        textContent: baykaKitNaGrushiText
-    }
-];
+    var BOOKS = [
+        {
+            id: 6,
+            title: "Українська мова",
+            author: "Літвінова І. Ф.",
+            category: "textbooks",
+            type: "pdf",
+            cover: "https://detmir.com.ua/wa-data/public/shop/products/41/26/492641/images/153662/153662.970.jpg",
+            downloadUrl: "ukrmova-6-klas-litvinova.pdf",
+            viewUrl: "ukrmova-6-klas-litvinova.pdf"
+        },
+        {
+            id: 3,
+            title: "Голуб і Лелека",
+            author: "Микита Годованець",
+            category: "ukr-lit",
+            type: "text",
+            cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTx-J878tNkF5Uo7mpGVxnFm5RNMk8vabH0sxXDKSEnBcVWBl-N6VBOH9yT&s=10",
+            textContent: BAYKA_GOLUB
+        },
+        {
+            id: 4,
+            title: "Щука й Кіт",
+            author: "Леонід Глібов",
+            category: "ukr-lit",
+            type: "text",
+            cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQQKu_qFYllJ68tTNNAwunoj8_DTugmBtCVqs3nU_zftOuDPZm1m_5XmsMh&s=10",
+            textContent: BAYKA_SHCHUKA
+        },
+        {
+            id: 5,
+            title: "Кіт на груші",
+            author: "Микита Годованець",
+            category: "ukr-lit",
+            type: "text",
+            cover: "https://i.ibb.co/8L55yRB1/Curious-Cat-in-a-Pear-Tree.png",
+            textContent: BAYKA_KIT_NA_GRUSHI
+        }
+    ];
 
-const categories = { textbooks: "Підручник", "ukr-lit": "Література" };
-const booksGrid = document.getElementById('booksGrid');
-const searchInput = document.getElementById('searchInput');
-const categoryFilter = document.getElementById('categoryFilter');
-const pdfModal = document.getElementById('pdfModal');
-const pdfViewer = document.getElementById('pdfViewer');
-const textViewer = document.getElementById('textViewer');
-const textContentWrapper = document.getElementById('textContentWrapper');
-const closeModal = document.getElementById('closeModal');
-const modalTitle = document.getElementById('modalTitle');
+    var CATEGORIES = { textbooks: "Підручник", "ukr-lit": "Література" };
 
-function escapeHtml(str) {
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-}
-
-function renderBooks(filteredBooks) {
-    booksGrid.innerHTML = '';
-    if (filteredBooks.length === 0) {
-        booksGrid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#6b7280;padding:40px;font-weight:500;">Нічого не знайдено</p>';
-        return;
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
 
-    filteredBooks.forEach(book => {
-        const card = document.createElement('div');
-        card.className = 'book-card';
+    function buildApp() {
+        var root = document.getElementById('appRoot');
+        document.getElementById('blockScreen').style.display = 'none';
+        root.style.display = 'block';
+        document.body.style.background = '#f9fafb';
+        document.body.style.color = '#111827';
+        document.body.style.display = 'block';
+        document.body.style.textAlign = 'left';
+        document.body.style.padding = '0';
+        document.body.style.fontFamily = "'Manrope', sans-serif";
 
-        let pickerHtml = '';
-        let actionButtons = '';
+        var styleEl = document.createElement('style');
+        styleEl.textContent = [
+            ":root{--primary:#4f46e5;--primary-hover:#4338ca;--bg:#f9fafb;--card-bg:#ffffff;--text-main:#111827;--text-muted:#6b7280;--border:#e5e7eb;--radius:20px;--shadow-sm:0 1px 2px 0 rgb(0 0 0/0.05);--shadow-xl:0 20px 25px -5px rgb(0 0 0/0.1),0 8px 10px -6px rgb(0 0 0/0.1);}",
+            "*{margin:0;padding:0;box-sizing:border-box;}",
+            "body{font-family:'Manrope',sans-serif;background-color:var(--bg);color:var(--text-main);line-height:1.6;-webkit-font-smoothing:antialiased;}",
+            ".container{max-width:1200px;margin:0 auto;padding:0 24px;}",
+            "header{background:rgba(255,255,255,0.8);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;padding:16px 0;}",
+            ".header-content{display:flex;justify-content:space-between;align-items:center;}",
+            ".logo{font-size:1.25rem;font-weight:800;color:var(--primary);display:flex;align-items:center;gap:8px;letter-spacing:-0.5px;}",
+            ".controls{display:flex;gap:16px;margin:32px 0;flex-wrap:wrap;}",
+            ".search-wrapper{flex:1;min-width:280px;position:relative;}",
+            ".search-wrapper svg{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--text-muted);width:20px;height:20px;}",
+            ".controls input,.controls select{width:100%;padding:14px 16px 14px 44px;border:1px solid var(--border);border-radius:12px;font-size:0.95rem;font-family:inherit;background:var(--card-bg);color:var(--text-main);transition:all 0.2s ease;box-shadow:var(--shadow-sm);appearance:none;}",
+            ".controls select{padding-left:16px;cursor:pointer;width:auto;min-width:200px;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 16px center;background-size:16px;padding-right:40px;}",
+            ".controls input:focus,.controls select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,0.1);}",
+            ".books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;margin-bottom:64px;}",
+            ".book-card{background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column;transition:all 0.3s ease;position:relative;}",
+            ".book-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-xl);border-color:transparent;}",
+            ".book-cover{height:220px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}",
+            ".book-cover img{width:100%;height:100%;object-fit:cover;transition:transform 0.5s ease;cursor:zoom-in;}",
+            ".book-card:hover .book-cover img{transform:scale(1.05);}",
+            "#imageViewer{display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,0.95);align-items:center;justify-content:center;padding:16px;cursor:zoom-out;}",
+            "#imageViewer.active{display:flex;}",
+            "#imageViewer img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;}",
+            "#imageViewer .close-btn{position:absolute;top:16px;right:16px;}",
+            ".book-info{padding:24px;flex:1;display:flex;flex-direction:column;}",
+            ".badge{align-self:flex-start;background:#eef2ff;color:var(--primary);padding:6px 12px;border-radius:8px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;}",
+            ".book-info h3{font-size:1.15rem;font-weight:700;line-height:1.4;margin-bottom:8px;color:var(--text-main);}",
+            ".book-info .author{color:var(--text-muted);font-size:0.9rem;margin-bottom:20px;}",
+            ".picker{display:flex;gap:12px;margin-bottom:12px;}",
+            ".picker label{flex:1;display:flex;flex-direction:column;gap:4px;font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;}",
+            ".picker input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:0.95rem;color:var(--text-main);background:#fff;}",
+            ".picker input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,0.1);}",
+            ".actions{display:flex;gap:12px;margin-top:auto;}",
+            ".btn{display:flex;align-items:center;justify-content:center;padding:12px;border-radius:12px;border:none;font-family:inherit;font-weight:600;font-size:0.95rem;cursor:pointer;transition:all 0.2s ease;text-decoration:none;flex:1;}",
+            ".btn-primary{background:var(--primary);color:white;box-shadow:0 4px 12px rgba(79,70,229,0.3);}",
+            ".btn-primary:hover{background:var(--primary-hover);transform:translateY(-1px);}",
+            ".btn-download{background:#f3f4f6;color:var(--text-main);flex:0 0 auto;padding:12px 16px;}",
+            ".btn-download:hover{background:#e5e7eb;}",
+            ".btn-read{background:#dcfce7;color:#166534;}",
+            ".btn-read:hover{background:#bbf7d0;}",
+            ".modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(17,24,39,0.9);backdrop-filter:blur(8px);z-index:1000;opacity:0;transition:opacity 0.3s ease;}",
+            ".modal.active{display:flex;flex-direction:column;opacity:1;}",
+            ".modal-header{background:rgba(31,41,55,0.95);color:white;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.1);}",
+            ".modal-title{font-weight:600;font-size:1rem;}",
+            ".close-btn{background:rgba(255,255,255,0.1);border:none;color:white;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:background 0.2s;}",
+            ".close-btn:hover{background:rgba(239,68,68,0.8);}",
+            "#pdfViewer{flex:1;width:100%;border:none;background:#374151;}",
+            "#textViewer{flex:1;width:100%;overflow-y:auto;background:#fdfbf7;padding:60px 20px;display:none;}",
+            ".text-content-wrapper{max-width:700px;margin:0 auto;font-family:'Merriweather',serif;font-size:1.2rem;line-height:1.9;color:#1f2937;}",
+            ".text-content-wrapper h2{font-family:'Manrope',sans-serif;font-size:2.2rem;font-weight:800;text-align:center;color:#111827;margin-bottom:8px;}",
+            ".text-content-wrapper .text-author{font-family:'Manrope',sans-serif;text-align:center;color:#6b7280;font-size:1rem;font-weight:500;margin-bottom:40px;text-transform:uppercase;letter-spacing:1px;}",
+            ".text-content-wrapper p{margin-bottom:1.2rem;white-space:pre-wrap;}",
+            "footer{background:white;border-top:1px solid var(--border);padding:32px 0;text-align:center;color:var(--text-muted);font-size:0.9rem;}",
+            "@media (max-width:768px){.header-content{flex-direction:column;gap:16px;}.controls{flex-direction:column;}.controls select{width:100%;}.text-content-wrapper{font-size:1.05rem;padding:0 10px;}.text-content-wrapper h2{font-size:1.8rem;}}"
+        ].join('\n');
+        document.head.appendChild(styleEl);
 
-        if (book.type === 'pdf') {
-            pickerHtml = `
-                <div class="picker">
-                    <label>Сторінка:
-                        <input type="number" min="1" inputmode="numeric" class="page-input" placeholder="">
-                    </label>
-                </div>
-            `;
-            actionButtons = `
-                <button class="btn btn-primary open-btn" data-id="${book.id}">Читати</button>
-                <a href="${escapeHtml(book.downloadUrl)}" target="_blank" class="btn btn-download" title="Скачати">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                </a>
-            `;
-        } else if (book.type === 'text') {
-            actionButtons = `
-                <button class="btn btn-read open-text-btn" data-id="${book.id}">Читати онлайн</button>
-            `;
+        root.innerHTML = [
+            '<header>',
+            '  <div class="container header-content">',
+            '    <div class="logo">',
+            '      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>',
+            '      Бібліотека',
+            '    </div>',
+            '  </div>',
+            '</header>',
+            '<main class="container">',
+            '  <section class="controls">',
+            '    <div class="search-wrapper">',
+            '      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+            '      <input type="text" id="searchInput" placeholder="Пошук">',
+            '    </div>',
+            '    <select id="categoryFilter">',
+            '      <option value="textbooks">Підручники</option>',
+            '      <option value="ukr-lit">Українська література</option>',
+            '    </select>',
+            '  </section>',
+            '  <section class="books-grid" id="booksGrid"></section>',
+            '</main>',
+            '<div class="modal" id="pdfModal">',
+            '  <div class="modal-header">',
+            '    <span class="modal-title" id="modalTitle">Перегляд</span>',
+            '    <button class="close-btn" id="closeModal" aria-label="Закрити">',
+            '      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>',
+            '    </button>',
+            '  </div>',
+            '  <iframe id="pdfViewer" src=""></iframe>',
+            '  <div id="textViewer">',
+            '    <div class="text-content-wrapper" id="textContentWrapper"></div>',
+            '  </div>',
+            '</div>',
+            '<div id="imageViewer">',
+            '  <img id="fullImage" src="" alt="">',
+            '  <button class="close-btn" id="closeImage" aria-label="Закрити">',
+            '    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>',
+            '  </button>',
+            '</div>',
+            '<footer>',
+            '  <div class="container">',
+            '    <p>&copy; 2026 Бібліотека. Усі матеріали використовуються з освітньою метою.</p>',
+            '  </div>',
+            '</footer>'
+        ].join('');
+
+        init();
+    }
+
+    function init() {
+        var booksGrid = document.getElementById('booksGrid');
+        var searchInput = document.getElementById('searchInput');
+        var categoryFilter = document.getElementById('categoryFilter');
+        var pdfModal = document.getElementById('pdfModal');
+        var pdfViewer = document.getElementById('pdfViewer');
+        var textViewer = document.getElementById('textViewer');
+        var textContentWrapper = document.getElementById('textContentWrapper');
+        var closeModal = document.getElementById('closeModal');
+        var modalTitle = document.getElementById('modalTitle');
+        var imageViewer = document.getElementById('imageViewer');
+        var fullImage = document.getElementById('fullImage');
+        var closeImage = document.getElementById('closeImage');
+
+        function renderBooks(filteredBooks) {
+            booksGrid.innerHTML = '';
+            if (filteredBooks.length === 0) {
+                booksGrid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#6b7280;padding:40px;font-weight:500;">Нічого не знайдено</p>';
+                return;
+            }
+
+            filteredBooks.forEach(function (book) {
+                var card = document.createElement('div');
+                card.className = 'book-card';
+
+                var pickerHtml = '';
+                var actionButtons = '';
+
+                if (book.type === 'pdf') {
+                    pickerHtml = '<div class="picker"><label>Сторінка:<input type="number" min="1" inputmode="numeric" class="page-input" placeholder=""></label></div>';
+                    actionButtons = '<button class="btn btn-primary open-btn" data-id="' + book.id + '">Читати</button>' +
+                        '<a href="' + escapeHtml(book.downloadUrl) + '" target="_blank" class="btn btn-download" title="Скачати">' +
+                        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></a>';
+                } else if (book.type === 'text') {
+                    actionButtons = '<button class="btn btn-read open-text-btn" data-id="' + book.id + '">Читати онлайн</button>';
+                }
+
+                var coverHtml;
+                if (book.cover.indexOf('http') === 0) {
+                    coverHtml = '<img src="' + escapeHtml(book.cover) + '" alt="' + escapeHtml(book.title) + '" loading="lazy" class="cover-img">';
+                } else {
+                    coverHtml = '<span class="emoji-fallback">' + book.cover + '</span>';
+                }
+
+                card.innerHTML =
+                    '<div class="book-cover">' + coverHtml + '</div>' +
+                    '<div class="book-info">' +
+                    '<span class="badge">' + (CATEGORIES[book.category] || 'Інше') + '</span>' +
+                    '<h3>' + escapeHtml(book.title) + '</h3>' +
+                    '<p class="author">' + escapeHtml(book.author) + '</p>' +
+                    pickerHtml +
+                    '<div class="actions">' + actionButtons + '</div>' +
+                    '</div>';
+                booksGrid.appendChild(card);
+            });
         }
 
-        let coverHtml = '';
-        if (book.cover.startsWith('http')) {
-            coverHtml = `<img src="${escapeHtml(book.cover)}" alt="${escapeHtml(book.title)}" loading="lazy" class="cover-img">`;
-        } else {
-            coverHtml = `<span class="emoji-fallback">${book.cover}</span>`;
+        function resolveTarget(card) {
+            var pageVal = card.querySelector('.page-input').value.trim();
+            var n = parseInt(pageVal, 10);
+            return !isNaN(n) && n > 0 ? n : null;
         }
 
-        card.innerHTML = `
-            <div class="book-cover">${coverHtml}</div>
-            <div class="book-info">
-                <span class="badge">${categories[book.category] || 'Інше'}</span>
-                <h3>${escapeHtml(book.title)}</h3>
-                <p class="author">${escapeHtml(book.author)}</p>
-                ${pickerHtml}
-                <div class="actions">
-                    ${actionButtons}
-                </div>
-            </div>
-        `;
-        booksGrid.appendChild(card);
-    });
-}
+        function openPdf(url, title, page) {
+            pdfViewer.style.display = 'block';
+            textViewer.style.display = 'none';
+            pdfViewer.src = page ? url + '#page=' + page : url;
+            modalTitle.textContent = page ? title + '- стор. ' + page : title;
+            pdfModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
 
-function resolveTarget(card) {
-    const pageVal = card.querySelector('.page-input').value.trim();
-    const n = parseInt(pageVal, 10);
-    return !isNaN(n) && n > 0 ? n : null;
-}
+        function openText(content, title, author) {
+            pdfViewer.style.display = 'none';
+            pdfViewer.src = '';
+            textViewer.style.display = 'block';
+            textContentWrapper.innerHTML =
+                '<h2>' + escapeHtml(title) + '</h2>' +
+                '<div class="text-author">' + escapeHtml(author) + '</div>' +
+                '<p>' + escapeHtml(content) + '</p>';
+            modalTitle.textContent = title;
+            pdfModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
 
-function openPdf(url, title, page) {
-    pdfViewer.style.display = 'block';
-    textViewer.style.display = 'none';
-    pdfViewer.src = page ? `${url}#page=${page}` : url;
-    modalTitle.textContent = page ? `${title}- стор. ${page}` : title;
-    pdfModal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
+        function closeReader() {
+            pdfModal.classList.remove('active');
+            pdfViewer.src = '';
+            document.body.style.overflow = '';
+        }
 
-function openText(content, title, author) {
-    pdfViewer.style.display = 'none';
-    pdfViewer.src = '';
-    textViewer.style.display = 'block';
+        function openImage(src, alt) {
+            fullImage.src = src;
+            fullImage.alt = alt;
+            imageViewer.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
 
-    textContentWrapper.innerHTML = `
-        <h2>${escapeHtml(title)}</h2>
-        <div class="text-author">${escapeHtml(author)}</div>
-        <p>${escapeHtml(content)}</p>
-    `;
+        function closeFullImage() {
+            imageViewer.classList.remove('active');
+            fullImage.src = '';
+            document.body.style.overflow = '';
+        }
 
-    modalTitle.textContent = title;
-    pdfModal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
+        closeModal.addEventListener('click', closeReader);
+        closeImage.addEventListener('click', closeFullImage);
+        imageViewer.addEventListener('click', function (e) {
+            if (e.target === imageViewer) closeFullImage();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                if (imageViewer.classList.contains('active')) closeFullImage();
+                else if (pdfModal.classList.contains('active')) closeReader();
+            }
+        });
 
-function closeReader() {
-    pdfModal.classList.remove('active');
-    pdfViewer.src = '';
-    document.body.style.overflow = '';
-}
+        booksGrid.addEventListener('click', function (e) {
+            var cover = e.target.closest('.cover-img');
+            if (cover) { openImage(cover.src, cover.alt); return; }
 
-closeModal.addEventListener('click', closeReader);
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-        if (imageViewer.classList.contains('active')) closeFullImage();
-        else if (pdfModal.classList.contains('active')) closeReader();
-    }
-});
+            var openBtn = e.target.closest('.open-btn');
+            if (openBtn) {
+                var book = BOOKS.find(function (b) { return b.id === Number(openBtn.dataset.id); });
+                if (!book) return;
+                var card = openBtn.closest('.book-card');
+                openPdf(book.viewUrl, book.title, resolveTarget(card));
+                return;
+            }
 
-const imageViewer = document.getElementById('imageViewer');
-const fullImage = document.getElementById('fullImage');
-const closeImage = document.getElementById('closeImage');
+            var textBtn = e.target.closest('.open-text-btn');
+            if (textBtn) {
+                var tb = BOOKS.find(function (b) { return b.id === Number(textBtn.dataset.id); });
+                if (tb) openText(tb.textContent, tb.title, tb.author);
+            }
+        });
 
-function openImage(src, alt) {
-    fullImage.src = src;
-    fullImage.alt = alt;
-    imageViewer.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
+        booksGrid.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && e.target.matches('.page-input')) {
+                var card = e.target.closest('.book-card');
+                var btn = card.querySelector('.open-btn');
+                if (btn) btn.click();
+            }
+        });
 
-function closeFullImage() {
-    imageViewer.classList.remove('active');
-    fullImage.src = '';
-    document.body.style.overflow = '';
-}
+        function filterBooks() {
+            var searchTerm = searchInput.value.toLowerCase().trim();
+            var category = categoryFilter.value;
+            var filtered = BOOKS.filter(function (book) {
+                var matchesSearch = book.title.toLowerCase().indexOf(searchTerm) !== -1 || book.author.toLowerCase().indexOf(searchTerm) !== -1;
+                return matchesSearch && book.category === category;
+            });
+            renderBooks(filtered);
+        }
 
-closeImage.addEventListener('click', closeFullImage);
-imageViewer.addEventListener('click', e => {
-    if (e.target === imageViewer) closeFullImage();
-});
-
-booksGrid.addEventListener('click', e => {
-    const cover = e.target.closest('.cover-img');
-    if (cover) {
-        openImage(cover.src, cover.alt);
-        return;
-    }
-
-    const openBtn = e.target.closest('.open-btn');
-    if (openBtn) {
-        const book = books.find(b => b.id === Number(openBtn.dataset.id));
-        if (!book) return;
-        const card = openBtn.closest('.book-card');
-        const page = resolveTarget(card);
-        openPdf(book.viewUrl, book.title, page);
-        return;
+        searchInput.addEventListener('input', filterBooks);
+        categoryFilter.addEventListener('change', filterBooks);
+        categoryFilter.value = 'textbooks';
+        filterBooks();
     }
 
-    const textBtn = e.target.closest('.open-text-btn');
-    if (textBtn) {
-        const book = books.find(b => b.id === Number(textBtn.dataset.id));
-        if (book) openText(book.textContent, book.title, book.author);
-    }
-});
-
-booksGrid.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && e.target.matches('.page-input')) {
-        const card = e.target.closest('.book-card');
-        const btn = card.querySelector('.open-btn');
-        if (btn) btn.click();
-    }
-});
-
-function filterBooks() {
-    const searchTerm = searchInput.value.toLowerCase().trim();
-    const category = categoryFilter.value;
-    const filtered = books.filter(book => {
-        const matchesSearch = book.title.toLowerCase().includes(searchTerm) || book.author.toLowerCase().includes(searchTerm);
-        const matchesCategory = book.category === category;
-        return matchesSearch && matchesCategory;
-    });
-    renderBooks(filtered);
-}
-
-searchInput.addEventListener('input', filterBooks);
-categoryFilter.addEventListener('change', filterBooks);
-
-categoryFilter.value = 'textbooks';
-filterBooks();
+    fetch('https://ipapi.co/json/')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.country_code === 'RU') {
+                document.getElementById('blockScreen').style.display = 'flex';
+                document.getElementById('appRoot').style.display = 'none';
+                document.getElementById('appRoot').innerHTML = '';
+            } else {
+                buildApp();
+            }
+        })
+        .catch(function () {
+            document.getElementById('blockScreen').style.display = 'flex';
+        });
+})();
 </script>
 
 </body>
