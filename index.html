@@ -7,6 +7,115 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+<!-- Скрываем всё до проверки IP. Если JS отключён — тоже останется скрытым (fail-closed) -->
+<style>
+html, body { visibility: hidden !important; background: #111827; }
+</style>
+
+<script>
+/* ============================================================
+   БЛОКИРОВКА ПО IP — запускается ДО рендера body
+   Логика fail-closed: любой сбой = блокировка
+   ============================================================ */
+(function () {
+    'use strict';
+
+    var BLOCK_HTML = '<!DOCTYPE html>' +
+'<html lang="uk"><head><meta charset="UTF-8">' +
+'<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+'<title>Доступ заблоковано</title>' +
+'<style>' +
+'html,body{height:100%;margin:0;visibility:visible!important;}' +
+'body{background:#111827;color:#fff;font-family:system-ui,-apple-system,sans-serif;' +
+'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+'text-align:center;padding:20px;box-sizing:border-box;}' +
+'h1{font-size:3rem;font-weight:800;color:#ef4444;margin:0 0 16px;letter-spacing:-1px;}' +
+'p{font-size:1.5rem;color:#9ca3af;margin:0;}' +
+'.sub{font-size:1rem;margin-top:24px;opacity:0.6;}' +
+'@media(max-width:600px){h1{font-size:2rem;}p{font-size:1.1rem;}}' +
+'</style></head><body>' +
+'<h1>ДОСТУП ЗАБЛОКОВАНО</h1>' +
+'<p>Допубачення</p>' +
+'<p class="sub">Ваш регіон не підтримується.</p>' +
+'</body></html>';
+
+    var blocked = false;
+
+    function blockAndStop() {
+        if (blocked) return;
+        blocked = true;
+        try {
+            document.open();
+            document.write(BLOCK_HTML);
+            document.close();
+        } catch (e) {
+            // Крайний случай: хотя бы убираем контент
+            document.documentElement.innerHTML = '';
+            location.replace('about:blank');
+        }
+    }
+
+    function unlock() {
+        if (blocked) return;
+        // Делаем body видимым
+        var html = document.documentElement;
+        var body = document.body;
+        if (html) html.style.visibility = 'visible';
+        if (body) body.style.visibility = 'visible';
+        // На случай, если body ещё не готов — ставим обработчик
+        document.addEventListener('DOMContentLoaded', function () {
+            document.documentElement.style.visibility = 'visible';
+            if (document.body) document.body.style.visibility = 'visible';
+        }, { once: true });
+    }
+
+    // Жёсткий таймаут: если за 3с не получили ответ — блокируем
+    var killed = false;
+    var killTimer = setTimeout(function () {
+        killed = true;
+        blockAndStop();
+    }, 3000);
+
+    function checkIp(url, extractCountry) {
+        return fetch(url, { cache: 'no-store', credentials: 'omit' })
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function (data) {
+                var cc = extractCountry(data);
+                if (!cc) throw new Error('no country');
+                return cc;
+            });
+    }
+
+    function decide(countryCode) {
+        if (killed || blocked) return;
+        clearTimeout(killTimer);
+        if (String(countryCode).toUpperCase() === 'RU') {
+            blockAndStop();
+        } else {
+            unlock();
+        }
+    }
+
+    // Основной сервис → резервный
+    checkIp('https://ipapi.co/json/', function (d) { return d.country_code; })
+        .then(decide)
+        .catch(function () {
+            // Резервный сервис
+            return checkIp('https://ipwho.is/', function (d) { return d.country_code; })
+                .then(decide)
+                .catch(function () {
+                    // Оба упали → fail-closed → блокируем
+                    clearTimeout(killTimer);
+                    blockAndStop();
+                });
+        });
+})();
+</script>
+
 <style>
 :root {
     --primary: #4f46e5;
@@ -169,7 +278,6 @@ header {
     cursor: zoom-in;
 }
 
-/* Перегляд обкладинки на весь екран */
 #imageViewer {
     display: none;
     position: fixed;
@@ -238,7 +346,6 @@ header {
     margin-bottom: 20px;
 }
 
-/* Вибір сторінки та вправи */
 .picker {
     display: flex;
     gap: 12px;
@@ -338,7 +445,6 @@ header {
     background: #bbf7d0;
 }
 
-/* Модальні вікна */
 .modal {
     display: none;
     position: fixed;
@@ -452,36 +558,6 @@ footer {
     font-size: 0.9rem;
 }
 
-#blockOverlay {
-    display: none;
-    position: fixed;
-    z-index: 9999;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #111827;
-    color: white;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 20px;
-}
-
-#blockOverlay h1 {
-    font-size: 3rem;
-    font-weight: 800;
-    color: #ef4444;
-    margin-bottom: 16px;
-    letter-spacing: -1px;
-}
-
-#blockOverlay p {
-    font-size: 1.5rem;
-    color: #9ca3af;
-}
-
 @media (max-width: 768px) {
     .header-content { flex-direction: column; gap: 16px; }
     .controls { flex-direction: column; }
@@ -492,12 +568,6 @@ footer {
 </style>
 </head>
 <body>
-
-<div id="blockOverlay">
-    <h1>ДОСТУП ЗАБЛОКОВАНО</h1>
-    <p>Допубачення</p>
-    <p style="font-size: 1rem; margin-top: 24px; opacity: 0.6;">Ваш регіон не підтримується.</p>
-</div>
 
 <header>
     <div class="container header-content">
@@ -549,51 +619,13 @@ footer {
 </footer>
 
 <script>
-// Перевірка IP: для заблокованого регіону замінюємо весь документ лише екраном блокування
-function showBlockScreen() {
-    const blockHtml = `<!DOCTYPE html>
-<html lang="uk">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Доступ заблоковано</title>
-<style>
-html, body { height: 100%; margin: 0; }
-body {
-    background: #111827;
-    color: white;
-    font-family: system-ui, sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 20px;
-}
-h1 { font-size: 3rem; font-weight: 800; color: #ef4444; margin: 0 0 16px; letter-spacing: -1px; }
-p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
-.sub { font-size: 1rem; margin-top: 24px; opacity: 0.6; }
-</style>
-</head>
-<body>
-<h1>ДОСТУП ЗАБЛОКОВАНО</h1>
-<p>Допубачення</p>
-<p class="sub">Ваш регіон не підтримується.</p>
-</body>
-</html>`;
-    document.open();
-    document.write(blockHtml);
-    document.close();
-}
+/* ============================================================
+   Основна логіка бібліотеки.
+   Виконується тільки якщо IP-перевірка вище не заблокувала документ
+   (у разі блокування document.write вже замінив документ,
+   і цей скрипт фізично не виконається у старому документі).
+   ============================================================ */
 
-fetch('https://ipapi.co/json/')
-    .then(response => response.json())
-    .then(data => {
-        if (data.country_code === 'RU') showBlockScreen();
-    })
-    .catch(err => console.log('IP Check Error:', err));
-
-// Тексти байок
 const baykaGolubText = `Якось-то навесні,
 Коли настали теплі дні,
 Лелека з вирію прилинув
@@ -831,7 +863,6 @@ function renderBooks(filteredBooks) {
     });
 }
 
-// Вибір сторінки або вправи для PDF
 function resolveTarget(card) {
     const pageVal = card.querySelector('.page-input').value.trim();
     const n = parseInt(pageVal, 10);
@@ -877,7 +908,6 @@ document.addEventListener('keydown', e => {
     }
 });
 
-// Перегляд обкладинки на весь екран
 const imageViewer = document.getElementById('imageViewer');
 const fullImage = document.getElementById('fullImage');
 const closeImage = document.getElementById('closeImage');
@@ -900,7 +930,6 @@ imageViewer.addEventListener('click', e => {
     if (e.target === imageViewer) closeFullImage();
 });
 
-// Делегування подій для кнопок у картках
 booksGrid.addEventListener('click', e => {
     const cover = e.target.closest('.cover-img');
     if (cover) {
@@ -925,7 +954,6 @@ booksGrid.addEventListener('click', e => {
     }
 });
 
-// Enter у полі сторінки відкриває книгу
 booksGrid.addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.target.matches('.page-input')) {
         const card = e.target.closest('.book-card');
