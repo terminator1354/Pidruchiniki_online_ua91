@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Бібліотека | 6 клас</title>
+<title>Бібліотека</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -549,14 +549,47 @@ footer {
 </footer>
 
 <script>
-// Перевірка IP
+// Перевірка IP: для заблокованого регіону замінюємо весь документ лише екраном блокування
+function showBlockScreen() {
+    const blockHtml = `<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Доступ заблоковано</title>
+<style>
+html, body { height: 100%; margin: 0; }
+body {
+    background: #111827;
+    color: white;
+    font-family: system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+}
+h1 { font-size: 3rem; font-weight: 800; color: #ef4444; margin: 0 0 16px; letter-spacing: -1px; }
+p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
+.sub { font-size: 1rem; margin-top: 24px; opacity: 0.6; }
+</style>
+</head>
+<body>
+<h1>ДОСТУП ЗАБЛОКОВАНО</h1>
+<p>Допубачення</p>
+<p class="sub">Ваш регіон не підтримується.</p>
+</body>
+</html>`;
+    document.open();
+    document.write(blockHtml);
+    document.close();
+}
+
 fetch('https://ipapi.co/json/')
     .then(response => response.json())
     .then(data => {
-        if (data.country_code === 'RU') {
-            document.getElementById('blockOverlay').style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        }
+        if (data.country_code === 'RU') showBlockScreen();
     })
     .catch(err => console.log('IP Check Error:', err));
 
@@ -685,7 +718,7 @@ const baykaKitNaGrushiText = `Кіт вік живе на штуках:
 const books = [
     {
         id: 6,
-        title: "Українська мова 6 клас",
+        title: "Українська мова",
         author: "Літвінова І. Ф.",
         category: "textbooks",
         type: "pdf",
@@ -759,7 +792,7 @@ function renderBooks(filteredBooks) {
             pickerHtml = `
                 <div class="picker">
                     <label>Сторінка
-                        <input type="number" min="1" inputmode="numeric" class="page-input" placeholder="напр. 45">
+                        <input type="number" min="1" inputmode="numeric" class="page-input" placeholder="">
                     </label>
                 </div>
             `;
@@ -809,7 +842,7 @@ function openPdf(url, title, page) {
     pdfViewer.style.display = 'block';
     textViewer.style.display = 'none';
     pdfViewer.src = page ? `${url}#page=${page}` : url;
-    modalTitle.textContent = page ? `${title} · стор. ${page}` : title;
+    modalTitle.textContent = page ? `${title}- стор. ${page}` : title;
     pdfModal.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
