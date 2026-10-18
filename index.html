@@ -40,38 +40,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
 (function () {
     'use strict';
 
-    var BAYKA_GOLUB = `Якось-то навесні,
-Коли настали теплі дні,
-Лелека з вирію прилинув
-На дороге гніздо своє,
-Що восени покинув
-(В житті усяко є!)
-
-Домашній Голуб запитав:
-- Де, друже, був?
-Що чув?
-- До вирію літав.
-Злякався - вітер в уші свище,
-Із півночі повіяв холодище,
-За ним повзе страшна зима…
-А в вирію… Зими нема,
-Природа стрінула привітом:
-Там вічне літо!...
-
-А Голуб з усміхом йому:
-- Тоді ж чому
-Ти кинув ту країну,
-Розхвалений той рай,
-І повернувся на Вкраїну?
-
-- Бо це - мій рідний край!
-Любов до рідного - могутнє диво!
-Нехай живеш на чужині щасливо,
-А туга гірко в серце б'є:
-Зове Вітчизна й путь далека,
-І ти летиш, як з вирію Лелека
-В гніздо своє.`;
-
+    // Текст для других баек оставляем прямо в коде
     var BAYKA_SHCHUKA = `Один мордатий Кіт до Щуки учащав;
 Пройдисвітка зубата знала,
 Чого хвостатий кум бажав:
@@ -179,7 +148,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             category: "ukr-lit",
             type: "text",
             cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTx-J878tNkF5Uo7mpGVxnFm5RNMk8vabH0sxXDKSEnBcVWBl-N6VBOH9yT&s=10",
-            textContent: BAYKA_GOLUB
+            fileUrl: "baika1.txt" // <--- Указываем файл вместо textContent
         },
         {
             id: 4,
@@ -201,7 +170,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
         }
     ];
 
-    var CATEGORIES = { textbooks: "Підручник", "ukr-lit": "Література" };
+    var CATEGORIES = { textbooks: "Підручник", "ukr-lit": "Байка" };
 
     function escapeHtml(str) {
         return String(str)
@@ -248,7 +217,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             "#imageViewer img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;}",
             "#imageViewer .close-btn{position:absolute;top:16px;right:16px;}",
             ".book-info{padding:24px;flex:1;display:flex;flex-direction:column;}",
-            ".badge{align-self:flex-start;background:#eef2ff;color:var(--primary);padding:6px 12px;border-radius:8px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;}",
+            ".badge{align-self:flex-start;background:#eef2ff;color:var(--primary);padding:6px 12px;border-radius:8px;font-size:0.75rem;font-weight:700;letter-spacing:0.5px;margin-bottom:12px;}",
             ".book-info h3{font-size:1.15rem;font-weight:700;line-height:1.4;margin-bottom:8px;color:var(--text-main);}",
             ".book-info .author{color:var(--text-muted);font-size:0.9rem;margin-bottom:20px;}",
             ".picker{display:flex;gap:12px;margin-bottom:12px;}",
@@ -297,7 +266,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             '    </div>',
             '    <select id="categoryFilter">',
             '      <option value="textbooks">Підручники</option>',
-            '      <option value="ukr-lit">Українська література</option>',
+            '      <option value="ukr-lit">Байка</option>',
             '    </select>',
             '  </section>',
             '  <section class="books-grid" id="booksGrid"></section>',
@@ -364,7 +333,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
                         '<a href="' + escapeHtml(book.downloadUrl) + '" target="_blank" class="btn btn-download" title="Скачати">' +
                         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></a>';
                 } else if (book.type === 'text') {
-                    actionButtons = '<button class="btn btn-read open-text-btn" data-id="' + book.id + '">Читати онлайн</button>';
+                    actionButtons = '<button class="btn btn-read open-text-btn" data-id="' + book.id + '">Читати</button>';
                 }
 
                 var coverHtml;
@@ -374,10 +343,12 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
                     coverHtml = '<span class="emoji-fallback">' + book.cover + '</span>';
                 }
 
+                var badgeLabel = book.label || CATEGORIES[book.category] || 'Інше';
+
                 card.innerHTML =
                     '<div class="book-cover">' + coverHtml + '</div>' +
                     '<div class="book-info">' +
-                    '<span class="badge">' + (CATEGORIES[book.category] || 'Інше') + '</span>' +
+                    '<span class="badge">' + badgeLabel + '</span>' +
                     '<h3>' + escapeHtml(book.title) + '</h3>' +
                     '<p class="author">' + escapeHtml(book.author) + '</p>' +
                     pickerHtml +
@@ -462,7 +433,31 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             var textBtn = e.target.closest('.open-text-btn');
             if (textBtn) {
                 var tb = BOOKS.find(function (b) { return b.id === Number(textBtn.dataset.id); });
-                if (tb) openText(tb.textContent, tb.title, tb.author);
+                if (!tb) return;
+
+                // Если у книги указан файл, скачиваем его
+                if (tb.fileUrl) {
+                    modalTitle.textContent = tb.title;
+                    pdfModal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    pdfViewer.style.display = 'none';
+                    textViewer.style.display = 'block';
+                    textContentWrapper.innerHTML = '<p style="text-align:center; color:#6b7280;">Завантаження...</p>';
+
+                    fetch(tb.fileUrl)
+                        .then(response => {
+                            if (!response.ok) throw new Error('Помилка завантаження');
+                            return response.text();
+                        })
+                        .then(text => {
+                            openText(text, tb.title, tb.author);
+                        })
+                        .catch(err => {
+                            textContentWrapper.innerHTML = '<p style="text-align:center; color:#ef4444;">Не вдалося завантажити текст. Перевірте, чи існує файл ' + tb.fileUrl + ' та чи запущено сайт через сервер.</p>';
+                        });
+                } else {
+                    openText(tb.textContent, tb.title, tb.author);
+                }
             }
         });
 
