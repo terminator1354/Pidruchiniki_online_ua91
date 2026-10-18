@@ -512,7 +512,7 @@ footer {
     <section class="controls">
         <div class="search-wrapper">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" id="searchInput" placeholder="Пошук підручників або авторів...">
+            <input type="text" id="searchInput" placeholder="Пошук">
         </div>
         <select id="categoryFilter">
             <option value="textbooks">Підручники</option>
@@ -791,7 +791,7 @@ function renderBooks(filteredBooks) {
         if (book.type === 'pdf') {
             pickerHtml = `
                 <div class="picker">
-                    <label>Сторінка
+                    <label>Сторінка:
                         <input type="number" min="1" inputmode="numeric" class="page-input" placeholder="">
                     </label>
                 </div>
