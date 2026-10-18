@@ -130,6 +130,8 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
 
     // ---------- PDF.js state ----------
     var pdfDoc = null, pdfPage = 1, pdfjsPromise = null, renderTask = null;
+    var pageTextCache = {};   // текст сторінок для пошуку вправ
+    var exSearchId = 0;       // щоб скасовувати застарілий пошук
 
     function loadPdfJs() {
         if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
@@ -227,9 +229,14 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             ".close-btn:hover{background:rgba(239,68,68,0.8);}",
             "#pdfViewer{flex:1;width:100%;border:none;background:#374151;}",
             "#pdfCanvasWrap{display:none;flex:1;overflow:auto;background:#374151;text-align:center;padding:12px;-webkit-overflow-scrolling:touch;}",
-            ".pdf-nav{position:sticky;top:0;display:flex;gap:8px;justify-content:center;align-items:center;padding:8px;margin-bottom:8px;background:rgba(31,41,55,0.95);border-radius:10px;z-index:2;}",
+            ".pdf-nav{position:sticky;top:0;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;padding:8px;margin-bottom:8px;background:rgba(31,41,55,0.95);border-radius:10px;z-index:2;}",
             ".pdf-nav input{width:70px;padding:6px;border-radius:6px;border:none;text-align:center;font-size:1rem;}",
+            ".pdf-nav #pdfExInput{width:90px;}",
+            "#pdfTotal{color:#ffffff;font-size:1rem;font-weight:600;}",
+            "#pdfExStatus{color:#ffffff;font-size:0.85rem;width:100%;text-align:center;min-height:1em;}",
             ".pdf-btn{background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:1.1rem;cursor:pointer;}",
+            ".pdf-btn:disabled{opacity:0.4;cursor:default;}",
+            ".pdf-btn-sm{font-size:0.9rem;padding:6px 12px;}",
             "#pdfCanvas{background:#fff;box-shadow:0 4px 16px rgba(0,0,0,0.4);max-width:none;}",
             "#textViewer{flex:1;width:100%;overflow-y:auto;background:#fdfbf7;color:#1f2937;padding:60px 20px;display:none;}",
             ".text-content-wrapper{max-width:700px;margin:0 auto;font-family:'Merriweather',serif;font-size:1.2rem;line-height:1.9;color:#1f2937;text-align:left;}",
@@ -280,6 +287,9 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             '      <input type="number" id="pdfPageInput" min="1" inputmode="numeric">',
             '      <span id="pdfTotal"></span>',
             '      <button class="pdf-btn" id="pdfNext" aria-label="Вперед">›</button>',
+            '      <input type="number" id="pdfExInput" min="1" inputmode="numeric" placeholder="Вправа">',
+            '      <button class="pdf-btn pdf-btn-sm" id="pdfExBtn">Знайти вправу</button>',
+            '      <div id="pdfExStatus"></div>',
             '    </div>',
             '    <canvas id="pdfCanvas"></canvas>',
             '  </div>',
@@ -314,6 +324,9 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
         var pdfNextBtn = document.getElementById('pdfNext');
         var pdfPageInput = document.getElementById('pdfPageInput');
         var pdfTotal = document.getElementById('pdfTotal');
+        var pdfExInput = document.getElementById('pdfExInput');
+        var pdfExBtn = document.getElementById('pdfExBtn');
+        var pdfExStatus = document.getElementById('pdfExStatus');
         var textViewer = document.getElementById('textViewer');
         var textContentWrapper = document.getElementById('textContentWrapper');
         var closeModal = document.getElementById('closeModal');
@@ -410,15 +423,75 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             });
         }
 
+        // ---------- Пошук вправи за текстом "Вправа N" ----------
+        function getPageText(num) {
+            if (pageTextCache[num] !== undefined) return Promise.resolve(pageTextCache[num]);
+            return pdfDoc.getPage(num).then(function (p) {
+                return p.getTextContent().then(function (tc) {
+                    var text = tc.items.map(function (item) { return item.str; }).join(' ');
+                    pageTextCache[num] = text;
+                    return text;
+                });
+            });
+        }
+
+        function findExercisePage(n, searchId) {
+            var re = new RegExp('Вправа\\s*№?\\s*' + n + '(?!\\d)', 'i');
+            var total = pdfDoc.numPages;
+            var current = 1;
+
+            function step() {
+                if (searchId !== exSearchId || !pdfDoc) return Promise.resolve(null);
+                if (current > total) return Promise.resolve(null);
+                var num = current++;
+                return getPageText(num).then(function (text) {
+                    if (re.test(text)) return num;
+                    return step();
+                });
+            }
+            return step();
+        }
+
+        function searchExercise() {
+            if (!pdfDoc) return;
+            var n = parseInt(pdfExInput.value, 10);
+            if (isNaN(n) || n < 1) {
+                pdfExStatus.textContent = 'Введіть номер вправи';
+                return;
+            }
+            var searchId = ++exSearchId;
+            pdfExStatus.textContent = 'Пошук...';
+            pdfExBtn.disabled = true;
+
+            findExercisePage(n, searchId).then(function (num) {
+                if (searchId !== exSearchId) return;
+                pdfExBtn.disabled = false;
+                if (num) {
+                    pdfExStatus.textContent = '';
+                    renderPage(num);
+                } else {
+                    pdfExStatus.textContent = 'Вправу ' + n + ' не знайдено';
+                }
+            }).catch(function () {
+                if (searchId !== exSearchId) return;
+                pdfExBtn.disabled = false;
+                pdfExStatus.textContent = 'Помилка пошуку';
+            });
+        }
+
         function openPdf(url, title, page) {
             pdfViewer.style.display = 'none';
             pdfViewer.src = '';
             textViewer.style.display = 'none';
             pdfCanvasWrap.style.display = 'block';
-            modalTitle.textContent = page ? title + ' — стор. ' + page : title;
+            modalTitle.textContent = page ? title + ' - стор. ' + page : title;
             pdfModal.classList.add('active');
             document.body.style.overflow = 'hidden';
 
+            exSearchId++;
+            pageTextCache = {};
+            pdfExStatus.textContent = '';
+            pdfExInput.value = '';
             if (pdfDoc) { try { pdfDoc.destroy(); } catch (e) {} pdfDoc = null; }
 
             loadPdfJs()
@@ -453,6 +526,8 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             pdfModal.classList.remove('active');
             pdfViewer.src = '';
             pdfCanvasWrap.style.display = 'none';
+            exSearchId++;
+            pageTextCache = {};
             if (renderTask) { try { renderTask.cancel(); } catch (e) {} renderTask = null; }
             if (pdfDoc) { try { pdfDoc.destroy(); } catch (e) {} pdfDoc = null; }
             document.body.style.overflow = '';
@@ -484,6 +559,14 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
         });
         pdfPageInput.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') this.blur();
+        });
+
+        pdfExBtn.addEventListener('click', searchExercise);
+        pdfExInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchExercise();
+            }
         });
 
         closeModal.addEventListener('click', closeReader);
