@@ -641,12 +641,6 @@ const baykaKitNaGrushiText = `Кіт вік живе на штуках:
 Ні труд, ні співи, ні краса, -
 Кишки і кендюхи з ума одразу зводять.`;
 
-/*
-  Індекс вправ для кожного підручника:
-  exercises: { "номер вправи": номер сторінки }
-  Приклад: exercises: { "12.3": 45, "7": 18 }
-  Заповніть його, і вправа відкриватиметься автоматично.
-*/
 const books = [
     {
         id: 6,
@@ -654,10 +648,9 @@ const books = [
         author: "Літвінова І. Ф.",
         category: "textbooks",
         type: "pdf",
-        cover: "🇺🇦",
+        cover: "https://detmir.com.ua/wa-data/public/shop/products/41/26/492641/images/153662/153662.970.jpg",
         downloadUrl: "ukrmova-6-klas-litvinova.pdf",
-        viewUrl: "ukrmova-6-klas-litvinova.pdf",
-        exercises: {}
+        viewUrl: "ukrmova-6-klas-litvinova.pdf"
     },
     {
         id: 3,
@@ -727,11 +720,7 @@ function renderBooks(filteredBooks) {
                     <label>Сторінка
                         <input type="number" min="1" inputmode="numeric" class="page-input" placeholder="напр. 45">
                     </label>
-                    <label>Вправа
-                        <input type="text" class="ex-input" placeholder="напр. 12.3">
-                    </label>
                 </div>
-                <div class="hint"></div>
             `;
             actionButtons = `
                 <button class="btn btn-primary open-btn" data-id="${book.id}">Читати</button>
@@ -769,29 +758,10 @@ function renderBooks(filteredBooks) {
 }
 
 // Вибір сторінки або вправи для PDF
-function resolveTarget(card, book) {
+function resolveTarget(card) {
     const pageVal = card.querySelector('.page-input').value.trim();
-    const exVal = card.querySelector('.ex-input').value.trim();
-    const hint = card.querySelector('.hint');
-    hint.textContent = '';
-
-    let page = null;
-
-    if (exVal) {
-        const exPage = book.exercises && book.exercises[exVal];
-        if (exPage) {
-            page = exPage;
-        } else {
-            hint.textContent = `Вправу «${exVal}» ще не додано до індексу. Відкрито ${pageVal ? 'вибрану сторінку' : 'початок книги'}.`;
-        }
-    }
-
-    if (page === null && pageVal) {
-        const n = parseInt(pageVal, 10);
-        if (!isNaN(n) && n > 0) page = n;
-    }
-
-    return page;
+    const n = parseInt(pageVal, 10);
+    return !isNaN(n) && n > 0 ? n : null;
 }
 
 function openPdf(url, title, page) {
@@ -837,7 +807,7 @@ booksGrid.addEventListener('click', e => {
         const book = books.find(b => b.id === Number(openBtn.dataset.id));
         if (!book) return;
         const card = openBtn.closest('.book-card');
-        const page = resolveTarget(card, book);
+        const page = resolveTarget(card);
         openPdf(book.viewUrl, book.title, page);
         return;
     }
@@ -849,9 +819,9 @@ booksGrid.addEventListener('click', e => {
     }
 });
 
-// Enter у полях вибору відкриває книгу
+// Enter у полі сторінки відкриває книгу
 booksGrid.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && e.target.matches('.page-input, .ex-input')) {
+    if (e.key === 'Enter' && e.target.matches('.page-input')) {
         const card = e.target.closest('.book-card');
         const btn = card.querySelector('.open-btn');
         if (btn) btn.click();
