@@ -39,7 +39,6 @@ body {
     padding: 0 24px;
 }
 
-/* Header */
 header {
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(12px);
@@ -67,7 +66,6 @@ header {
     letter-spacing: -0.5px;
 }
 
-/* Controls */
 .controls {
     display: flex;
     gap: 16px;
@@ -123,7 +121,6 @@ header {
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
-/* Books Grid */
 .books-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -262,7 +259,6 @@ header {
     background: #bbf7d0;
 }
 
-/* Модальні вікна */
 .modal {
     display: none;
     position: fixed;
@@ -302,7 +298,6 @@ header {
     max-width: 300px;
 }
 
-/* Панель інструментів для підручників */
 .pdf-toolbar {
     display: flex;
     gap: 12px;
@@ -359,6 +354,12 @@ header {
 
 .toolbar-group button:hover {
     background: var(--primary-hover);
+}
+
+.toolbar-hint {
+    color: #9ca3af;
+    font-size: 0.8rem;
+    margin-left: auto;
 }
 
 .close-btn {
@@ -430,7 +431,6 @@ header {
     white-space: pre-wrap;
 }
 
-/* Футер */
 footer {
     background: white;
     border-top: 1px solid var(--border);
@@ -440,7 +440,6 @@ footer {
     font-size: 0.9rem;
 }
 
-/* Блок Росії */
 #blockOverlay {
     display: none;
     position: fixed;
@@ -479,6 +478,7 @@ footer {
     .text-content-wrapper h2 { font-size: 1.8rem; }
     .pdf-toolbar { flex-direction: column; align-items: stretch; }
     .toolbar-group { justify-content: space-between; }
+    .toolbar-hint { text-align: center; margin-left: 0; margin-top: 8px; }
 }
 </style>
 </head>
@@ -521,17 +521,14 @@ footer {
         </button>
     </div>
     
-    <!-- Панель навігації (з'являється тільки для PDF) -->
     <div class="pdf-toolbar" id="pdfToolbar" style="display: none;">
         <div class="toolbar-group">
             <label>Сторінка:</label>
             <input type="number" id="pageInput" placeholder="#" min="1">
             <button onclick="jumpToPage()">Перейти</button>
         </div>
-        <div class="toolbar-group">
-            <label>Вправа:</label>
-            <input type="number" id="exerciseInput" placeholder="#" min="1">
-            <button onclick="searchExercise()">Знайти</button>
+        <div class="toolbar-hint">
+            Для пошуку вправи натисніть <b>Ctrl+F</b> всередині документа
         </div>
     </div>
 
@@ -548,7 +545,6 @@ footer {
 </footer>
 
 <script>
-// Перевірка IP
 fetch('https://ipapi.co/json/')
     .then(response => response.json())
     .then(data => {
@@ -559,7 +555,6 @@ fetch('https://ipapi.co/json/')
     })
     .catch(err => console.log('IP Check Error:', err));
 
-// Тексти байок
 const baykaGolubText = `Якось-то навесні,
 Коли настали теплі дні,
 Лелека з вирію прилинув
@@ -681,7 +676,6 @@ const baykaKitNaGrushiText = `Кіт вік живе на штуках:
 Ні труд, ні співи, ні краса, -
 Кишки і кендюхи з ума одразу зводять.`;
 
-// База даних
 const books = [
     {
         id: 1,
@@ -691,7 +685,6 @@ const books = [
         type: "pdf",
         cover: "📕",
         downloadUrl: "https://www.mediafire.com/file/a6orpefcauakjpp/6-klas-matematyka-ister-2023-1.pdf/file",
-        // Для Google Viewer використовуємо спеціальний формат
         viewUrl: "https://docs.google.com/viewer?url=https://www.mediafire.com/file/a6orpefcauakjpp/6-klas-matematyka-ister-2023-1.pdf/file&embedded=true"
     },
     {
@@ -755,9 +748,7 @@ const closeModal = document.getElementById('closeModal');
 const modalTitle = document.getElementById('modalTitle');
 const pdfToolbar = document.getElementById('pdfToolbar');
 const pageInput = document.getElementById('pageInput');
-const exerciseInput = document.getElementById('exerciseInput');
 
-// Змінна для зберігання поточного URL PDF та стану
 let currentPdfUrl = '';
 let isGoogleViewer = false;
 
@@ -812,16 +803,10 @@ function renderBooks(filteredBooks) {
 function openPdf(url, title, id) {
     pdfViewer.style.display = 'block';
     textViewer.style.display = 'none';
-    pdfToolbar.style.display = 'flex'; // Показуємо панель навігації для PDF
-    
-    // Скидаємо значення інпутів
+    pdfToolbar.style.display = 'flex';
     pageInput.value = '';
-    exerciseInput.value = '';
-
-    // Перевіряємо, чи це Google Docs Viewer (для математики) чи прямий PDF (для укрмови)
     isGoogleViewer = url.includes('docs.google.com');
     currentPdfUrl = url;
-    
     pdfViewer.src = url;
     modalTitle.textContent = title;
     pdfModal.classList.add('active');
@@ -831,7 +816,7 @@ function openPdf(url, title, id) {
 function openText(content, title, author) {
     pdfViewer.style.display = 'none';
     pdfViewer.src = '';
-    pdfToolbar.style.display = 'none'; // Ховаємо панель для текстів
+    pdfToolbar.style.display = 'none';
     textViewer.style.display = 'block';
     
     textContentWrapper.innerHTML = `
@@ -845,37 +830,19 @@ function openText(content, title, author) {
     document.body.style.overflow = 'hidden';
 }
 
-// Функція переходу на сторінку
 function jumpToPage() {
     const page = pageInput.value;
     if (!page) return;
 
     if (isGoogleViewer) {
-        // Для Google Viewer додаємо параметр &page=N
-        // Але оскільки URL вже має параметри, треба акуратно додати
-        let baseUrl = currentPdfUrl.split('&page=')[0]; // Видаляємо попередній page, якщо є
+        let baseUrl = currentPdfUrl.split('&page=')[0];
         let newUrl = baseUrl + '&page=' + page;
         pdfViewer.src = newUrl;
     } else {
-        // Для звичайного PDF (як укрмова) використовуємо #page=N
-        let baseUrl = currentPdfUrl.split('#')[0]; // Видаляємо попередній якір
+        let baseUrl = currentPdfUrl.split('#')[0];
         let newUrl = baseUrl + '#page=' + page;
         pdfViewer.src = newUrl;
     }
-}
-
-// Функція пошуку вправи
-function searchExercise() {
-    const exercise = exerciseInput.value;
-    if (!exercise) return;
-
-    // Оскільки стандартний PDF не підтримує пошук по тексту через URL,
-    // ми відкриваємо Google Пошук з запитом "назва підручника вправа N"
-    const bookTitle = modalTitle.textContent;
-    const query = encodeURIComponent(`${bookTitle} вправа ${exercise}`);
-    
-    // Відкриваємо нову вкладку
-    window.open(`https://www.google.com/search?q=${query}`, '_blank');
 }
 
 closeModal.addEventListener('click', () => {
