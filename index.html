@@ -30,7 +30,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
 
 <div id="blockScreen">
     <h1>ДОСТУП ЗАБЛОКОВАНО</h1>
-    <p>Допобачення</p>
+    <p>Допубачення</p>
     <p class="sub">Ваш регіон не підтримується.</p>
 </div>
 
@@ -120,13 +120,37 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
         }
     ];
 
-    var CATEGORIES = { 
+    var CATEGORIES = {
         "ukr-mova": "Укр мова",
         "ukr-lit": "Укр-літ",
         history: "Історія",
         "eng-mova": "Англ мова",
-        bayky: "Байка" 
+        bayky: "Байка"
     };
+
+    // ---------- PDF.js state ----------
+    var pdfDoc = null, pdfPage = 1, pdfjsPromise = null, renderTask = null;
+
+    function loadPdfJs() {
+        if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+        if (!pdfjsPromise) {
+            pdfjsPromise = new Promise(function (resolve, reject) {
+                var s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+                s.onload = function () {
+                    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+                        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    resolve(window.pdfjsLib);
+                };
+                s.onerror = function () {
+                    pdfjsPromise = null;
+                    reject(new Error('PDF.js load failed'));
+                };
+                document.head.appendChild(s);
+            });
+        }
+        return pdfjsPromise;
+    }
 
     function escapeHtml(str) {
         return String(str)
@@ -134,10 +158,6 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
-    }
-
-    function isMobile() {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
 
     function buildApp() {
@@ -169,11 +189,16 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             ".books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;margin-bottom:64px;align-items:stretch;}",
             ".book-card{background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column;transition:all 0.3s ease;position:relative;height:100%;}",
             ".book-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-xl);border-color:transparent;}",
+
+            /* Підручники: білий фон, object-fit contain */
             ".book-cover{height:220px;background:#ffffff;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:12px;flex-shrink:0;}",
             ".book-cover img{width:100%;height:100%;object-fit:contain;transition:transform 0.5s ease;cursor:zoom-in;}",
             ".book-card:hover .book-cover img{transform:scale(1.05);}",
+
+            /* Байки: сірий фон, картинка повністю заповнює блок */
             ".book-card[data-cat='bayky'] .book-cover{background:#f3f4f6;padding:0;}",
             ".book-card[data-cat='bayky'] .book-cover img{object-fit:cover;}",
+
             "#imageViewer{display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,0.95);align-items:center;justify-content:center;padding:16px;cursor:zoom-out;}",
             "#imageViewer.active{display:flex;}",
             "#imageViewer img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;}",
@@ -184,7 +209,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             ".book-info .author{color:var(--text-muted);font-size:0.9rem;margin-bottom:20px;}",
             ".picker{display:flex;gap:12px;margin-bottom:12px;}",
             ".picker label{flex:1;display:flex;flex-direction:column;gap:4px;font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;}",
-            ".picker input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:0.95rem;color:var(--text-main);background:#fff;z-index:10;position:relative;}",
+            ".picker input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:0.95rem;color:var(--text-main);background:#fff;}",
             ".picker input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,0.1);}",
             ".actions{display:flex;gap:12px;margin-top:auto;}",
             ".btn{display:flex;align-items:center;justify-content:center;padding:12px;border-radius:12px;border:none;font-family:inherit;font-weight:600;font-size:0.95rem;cursor:pointer;transition:all 0.2s ease;text-decoration:none;flex:1;}",
@@ -201,6 +226,11 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             ".close-btn{background:rgba(255,255,255,0.1);border:none;color:white;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:background 0.2s;}",
             ".close-btn:hover{background:rgba(239,68,68,0.8);}",
             "#pdfViewer{flex:1;width:100%;border:none;background:#374151;}",
+            "#pdfCanvasWrap{display:none;flex:1;overflow:auto;background:#374151;text-align:center;padding:12px;-webkit-overflow-scrolling:touch;}",
+            ".pdf-nav{position:sticky;top:0;display:flex;gap:8px;justify-content:center;align-items:center;padding:8px;margin-bottom:8px;background:rgba(31,41,55,0.95);border-radius:10px;z-index:2;}",
+            ".pdf-nav input{width:70px;padding:6px;border-radius:6px;border:none;text-align:center;font-size:1rem;}",
+            ".pdf-btn{background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:1.1rem;cursor:pointer;}",
+            "#pdfCanvas{background:#fff;box-shadow:0 4px 16px rgba(0,0,0,0.4);max-width:none;}",
             "#textViewer{flex:1;width:100%;overflow-y:auto;background:#fdfbf7;color:#1f2937;padding:60px 20px;display:none;}",
             ".text-content-wrapper{max-width:700px;margin:0 auto;font-family:'Merriweather',serif;font-size:1.2rem;line-height:1.9;color:#1f2937;text-align:left;}",
             ".text-content-wrapper h2{font-family:'Manrope',sans-serif;font-size:2.2rem;font-weight:800;text-align:center;color:#111827;margin-bottom:8px;}",
@@ -244,6 +274,15 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             '    </button>',
             '  </div>',
             '  <iframe id="pdfViewer" src=""></iframe>',
+            '  <div id="pdfCanvasWrap">',
+            '    <div class="pdf-nav">',
+            '      <button class="pdf-btn" id="pdfPrev" aria-label="Назад">‹</button>',
+            '      <input type="number" id="pdfPageInput" min="1" inputmode="numeric">',
+            '      <span id="pdfTotal"></span>',
+            '      <button class="pdf-btn" id="pdfNext" aria-label="Вперед">›</button>',
+            '    </div>',
+            '    <canvas id="pdfCanvas"></canvas>',
+            '  </div>',
             '  <div id="textViewer">',
             '    <div class="text-content-wrapper" id="textContentWrapper"></div>',
             '  </div>',
@@ -269,6 +308,12 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
         var categoryFilter = document.getElementById('categoryFilter');
         var pdfModal = document.getElementById('pdfModal');
         var pdfViewer = document.getElementById('pdfViewer');
+        var pdfCanvasWrap = document.getElementById('pdfCanvasWrap');
+        var pdfCanvas = document.getElementById('pdfCanvas');
+        var pdfPrevBtn = document.getElementById('pdfPrev');
+        var pdfNextBtn = document.getElementById('pdfNext');
+        var pdfPageInput = document.getElementById('pdfPageInput');
+        var pdfTotal = document.getElementById('pdfTotal');
         var textViewer = document.getElementById('textViewer');
         var textContentWrapper = document.getElementById('textContentWrapper');
         var closeModal = document.getElementById('closeModal');
@@ -293,7 +338,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
                 var actionButtons = '';
 
                 if (book.type === 'pdf') {
-                    pickerHtml = '<div class="picker"><label>Сторінка:<input type="number" min="1" inputmode="numeric" pattern="[0-9]*" class="page-input" placeholder="№"></label></div>';
+                    pickerHtml = '<div class="picker"><label>Сторінка:<input type="number" min="1" inputmode="numeric" class="page-input" placeholder=""></label></div>';
                     actionButtons = '<button class="btn btn-primary open-btn" data-id="' + book.id + '">Читати</button>' +
                         '<a href="' + escapeHtml(book.downloadUrl) + '" target="_blank" class="btn btn-download" title="Скачати">' +
                         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></a>';
@@ -324,33 +369,76 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
         }
 
         function resolveTarget(card) {
-            var input = card.querySelector('.page-input');
-            if (!input) return null;
-            var pageVal = input.value.trim();
+            var pageVal = card.querySelector('.page-input').value.trim();
             var n = parseInt(pageVal, 10);
             return !isNaN(n) && n > 0 ? n : null;
         }
 
-        function openPdf(url, title, page) {
-            var targetUrl = page ? url + '#page=' + page : url;
-            
-            // Якщо телефон — відкриваємо у новій вкладці для стабільної роботи сторінок
-            if (isMobile()) {
-                window.open(targetUrl, '_blank');
-                return;
+        // ---------- PDF rendering via PDF.js ----------
+        function renderPage(num) {
+            if (!pdfDoc) return Promise.resolve();
+            if (renderTask) {
+                try { renderTask.cancel(); } catch (e) {}
+                renderTask = null;
             }
+            return pdfDoc.getPage(num).then(function (p) {
+                var wrapWidth = (pdfCanvasWrap.clientWidth || window.innerWidth) - 24;
+                var base = p.getViewport({ scale: 1 });
+                var scale = Math.min(wrapWidth / base.width, 2.5);
+                var dpr = window.devicePixelRatio || 1;
+                var vp = p.getViewport({ scale: scale * dpr });
 
-            pdfViewer.style.display = 'block';
+                pdfCanvas.width = vp.width;
+                pdfCanvas.height = vp.height;
+                pdfCanvas.style.width = (vp.width / dpr) + 'px';
+                pdfCanvas.style.height = (vp.height / dpr) + 'px';
+
+                pdfPage = num;
+                pdfPageInput.value = num;
+                pdfTotal.textContent = '/ ' + pdfDoc.numPages;
+                pdfPrevBtn.disabled = num <= 1;
+                pdfNextBtn.disabled = num >= pdfDoc.numPages;
+
+                renderTask = p.render({ canvasContext: pdfCanvas.getContext('2d'), viewport: vp });
+                return renderTask.promise;
+            }).then(function () {
+                renderTask = null;
+            }, function (err) {
+                renderTask = null;
+                if (err && err.name === 'RenderingCancelledException') return;
+                throw err;
+            });
+        }
+
+        function openPdf(url, title, page) {
+            pdfViewer.style.display = 'none';
+            pdfViewer.src = '';
             textViewer.style.display = 'none';
-            pdfViewer.src = targetUrl;
-            modalTitle.textContent = page ? title + ' - стор. ' + page : title;
+            pdfCanvasWrap.style.display = 'block';
+            modalTitle.textContent = page ? title + ' — стор. ' + page : title;
             pdfModal.classList.add('active');
             document.body.style.overflow = 'hidden';
+
+            if (pdfDoc) { try { pdfDoc.destroy(); } catch (e) {} pdfDoc = null; }
+
+            loadPdfJs()
+                .then(function (lib) { return lib.getDocument(url).promise; })
+                .then(function (doc) {
+                    pdfDoc = doc;
+                    var target = Math.min(Math.max(page || 1, 1), doc.numPages);
+                    return renderPage(target);
+                })
+                .catch(function () {
+                    pdfCanvasWrap.style.display = 'none';
+                    textViewer.style.display = 'block';
+                    textContentWrapper.innerHTML = '<p style="text-align:center;color:#ef4444;padding:20px;">Не вдалося відкрити PDF</p>';
+                });
         }
 
         function openText(content, title, author) {
             pdfViewer.style.display = 'none';
             pdfViewer.src = '';
+            pdfCanvasWrap.style.display = 'none';
             textViewer.style.display = 'block';
             textContentWrapper.innerHTML =
                 '<h2>' + escapeHtml(title) + '</h2>' +
@@ -364,6 +452,9 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
         function closeReader() {
             pdfModal.classList.remove('active');
             pdfViewer.src = '';
+            pdfCanvasWrap.style.display = 'none';
+            if (renderTask) { try { renderTask.cancel(); } catch (e) {} renderTask = null; }
+            if (pdfDoc) { try { pdfDoc.destroy(); } catch (e) {} pdfDoc = null; }
             document.body.style.overflow = '';
         }
 
@@ -380,6 +471,21 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             document.body.style.overflow = '';
         }
 
+        pdfPrevBtn.addEventListener('click', function () {
+            if (pdfDoc && pdfPage > 1) renderPage(pdfPage - 1);
+        });
+        pdfNextBtn.addEventListener('click', function () {
+            if (pdfDoc && pdfPage < pdfDoc.numPages) renderPage(pdfPage + 1);
+        });
+        pdfPageInput.addEventListener('change', function () {
+            var n = parseInt(this.value, 10);
+            if (pdfDoc && n >= 1 && n <= pdfDoc.numPages) renderPage(n);
+            else this.value = pdfPage;
+        });
+        pdfPageInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') this.blur();
+        });
+
         closeModal.addEventListener('click', closeReader);
         closeImage.addEventListener('click', closeFullImage);
         imageViewer.addEventListener('click', function (e) {
@@ -393,8 +499,6 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
         });
 
         booksGrid.addEventListener('click', function (e) {
-            if (e.target.tagName === 'INPUT') return; // Не перехоплюємо клік на input
-
             var cover = e.target.closest('.cover-img');
             if (cover) { openImage(cover.src, cover.alt); return; }
 
@@ -416,18 +520,19 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
                 pdfModal.classList.add('active');
                 document.body.style.overflow = 'hidden';
                 pdfViewer.style.display = 'none';
+                pdfCanvasWrap.style.display = 'none';
                 textViewer.style.display = 'block';
                 textContentWrapper.innerHTML = '<p style="text-align:center; color:#6b7280;">Завантаження...</p>';
 
                 fetch(tb.fileUrl)
-                    .then(response => {
+                    .then(function (response) {
                         if (!response.ok) throw new Error('Помилка завантаження');
                         return response.text();
                     })
-                    .then(text => {
+                    .then(function (text) {
                         openText(text, tb.title, tb.author);
                     })
-                    .catch(err => {
+                    .catch(function () {
                         textContentWrapper.innerHTML = '<p style="text-align:center; color:#ef4444; padding: 20px; font-weight: 500;">Не вдалося</p>';
                     });
             }
@@ -452,8 +557,8 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
         }
 
         searchInput.addEventListener('input', filterBooks);
-        categoryFilter.value = 'ukr-mova';
         categoryFilter.addEventListener('change', filterBooks);
+        categoryFilter.value = 'ukr-mova';
         filterBooks();
     }
 
@@ -469,7 +574,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             }
         })
         .catch(function () {
-            buildApp(); // При помилці визначення IP відкриваємо сайт
+            document.getElementById('blockScreen').style.display = 'flex';
         });
 })();
 </script>
