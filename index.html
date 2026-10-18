@@ -18,8 +18,6 @@
     --border: #e5e7eb;
     --radius: 20px;
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
@@ -203,7 +201,54 @@ header {
 .book-info .author {
     color: var(--text-muted);
     font-size: 0.9rem;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
+}
+
+/* Вибір сторінки та вправи */
+.picker {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.picker label {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.picker input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    background: #fff;
+}
+
+.picker input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.hint {
+    font-size: 0.85rem;
+    color: #b45309;
+    min-height: 0;
+    margin-bottom: 8px;
+}
+
+.hint:empty {
+    display: none;
 }
 
 .actions {
@@ -259,6 +304,7 @@ header {
     background: #bbf7d0;
 }
 
+/* Модальні вікна */
 .modal {
     display: none;
     position: fixed;
@@ -266,7 +312,7 @@ header {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(17, 24, 39, 0.95);
+    background: rgba(17, 24, 39, 0.9);
     backdrop-filter: blur(8px);
     z-index: 1000;
     opacity: 0;
@@ -282,7 +328,7 @@ header {
 .modal-header {
     background: rgba(31, 41, 55, 0.95);
     color: white;
-    padding: 12px 24px;
+    padding: 16px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -292,74 +338,6 @@ header {
 .modal-title {
     font-weight: 600;
     font-size: 1rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 300px;
-}
-
-.pdf-toolbar {
-    display: flex;
-    gap: 12px;
-    background: #1f2937;
-    padding: 12px 24px;
-    align-items: center;
-    flex-wrap: wrap;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-.toolbar-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(255,255,255,0.05);
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-.toolbar-group label {
-    color: #9ca3af;
-    font-size: 0.85rem;
-    font-weight: 500;
-}
-
-.toolbar-group input {
-    background: transparent;
-    border: none;
-    color: white;
-    font-family: inherit;
-    font-size: 0.95rem;
-    font-weight: 600;
-    width: 60px;
-    outline: none;
-    text-align: center;
-}
-
-.toolbar-group input::placeholder {
-    color: #4b5563;
-}
-
-.toolbar-group button {
-    background: var(--primary);
-    border: none;
-    color: white;
-    padding: 4px 12px;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 0.85rem;
-    transition: background 0.2s;
-}
-
-.toolbar-group button:hover {
-    background: var(--primary-hover);
-}
-
-.toolbar-hint {
-    color: #9ca3af;
-    font-size: 0.8rem;
-    margin-left: auto;
 }
 
 .close-btn {
@@ -476,9 +454,6 @@ footer {
     .controls select { width: 100%; }
     .text-content-wrapper { font-size: 1.05rem; padding: 0 10px; }
     .text-content-wrapper h2 { font-size: 1.8rem; }
-    .pdf-toolbar { flex-direction: column; align-items: stretch; }
-    .toolbar-group { justify-content: space-between; }
-    .toolbar-hint { text-align: center; margin-left: 0; margin-top: 8px; }
 }
 </style>
 </head>
@@ -516,22 +491,10 @@ footer {
 <div class="modal" id="pdfModal">
     <div class="modal-header">
         <span class="modal-title" id="modalTitle">Перегляд</span>
-        <button class="close-btn" id="closeModal">
+        <button class="close-btn" id="closeModal" aria-label="Закрити">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
     </div>
-    
-    <div class="pdf-toolbar" id="pdfToolbar" style="display: none;">
-        <div class="toolbar-group">
-            <label>Сторінка:</label>
-            <input type="number" id="pageInput" placeholder="#" min="1">
-            <button onclick="jumpToPage()">Перейти</button>
-        </div>
-        <div class="toolbar-hint">
-            Для пошуку вправи натисніть <b>Ctrl+F</b> всередині документа
-        </div>
-    </div>
-
     <iframe id="pdfViewer" src=""></iframe>
     <div id="textViewer">
         <div class="text-content-wrapper" id="textContentWrapper"></div>
@@ -545,6 +508,7 @@ footer {
 </footer>
 
 <script>
+// Перевірка IP
 fetch('https://ipapi.co/json/')
     .then(response => response.json())
     .then(data => {
@@ -555,6 +519,7 @@ fetch('https://ipapi.co/json/')
     })
     .catch(err => console.log('IP Check Error:', err));
 
+// Тексти байок
 const baykaGolubText = `Якось-то навесні,
 Коли настали теплі дні,
 Лелека з вирію прилинув
@@ -676,27 +641,13 @@ const baykaKitNaGrushiText = `Кіт вік живе на штуках:
 Ні труд, ні співи, ні краса, -
 Кишки і кендюхи з ума одразу зводять.`;
 
+/*
+  Індекс вправ для кожного підручника:
+  exercises: { "номер вправи": номер сторінки }
+  Приклад: exercises: { "12.3": 45, "7": 18 }
+  Заповніть його, і вправа відкриватиметься автоматично.
+*/
 const books = [
-    {
-        id: 1,
-        title: "Математика 6 клас. Частина 1",
-        author: "Олександр Істер",
-        category: "textbooks",
-        type: "pdf",
-        cover: "📕",
-        downloadUrl: "https://www.mediafire.com/file/a6orpefcauakjpp/6-klas-matematyka-ister-2023-1.pdf/file",
-        viewUrl: "https://docs.google.com/viewer?url=https://www.mediafire.com/file/a6orpefcauakjpp/6-klas-matematyka-ister-2023-1.pdf/file&embedded=true"
-    },
-    {
-        id: 2,
-        title: "Математика 6 клас. Частина 2",
-        author: "Олександр Істер",
-        category: "textbooks",
-        type: "pdf",
-        cover: "📘",
-        downloadUrl: "https://www.mediafire.com/file/8q5q7f4j0qrnl3b/%25D0%2586%25D1%2581%25D1%2582%25D0%25B5%25D1%2580_%25D0%259C%25D0%25B0%25D1%2582%25D0%25B5%25D0%25BC%25D0%25B0%25D1%2582%25D0%25B8%25D0%25BA%25D0%25B0_%25D0%259F_6_%25D1%2587.2.pdf/file",
-        viewUrl: "https://docs.google.com/viewer?url=https://www.mediafire.com/file/8q5q7f4j0qrnl3b/%25D0%2586%25D1%2581%25D1%2582%25D0%25B5%25D1%2580_%25D0%259C%25D0%25B0%25D1%2582%25D0%25B5%25D0%25BC%25D0%25B0%25D1%2582%25D0%25B8%25D0%25BA%25D0%25B0_%25D0%259F_6_%25D1%2587.2.pdf/file&embedded=true"
-    },
     {
         id: 6,
         title: "Українська мова 6 клас",
@@ -705,7 +656,8 @@ const books = [
         type: "pdf",
         cover: "🇺🇦",
         downloadUrl: "ukrmova-6-klas-litvinova.pdf",
-        viewUrl: "ukrmova-6-klas-litvinova.pdf"
+        viewUrl: "ukrmova-6-klas-litvinova.pdf",
+        exercises: {}
     },
     {
         id: 3,
@@ -746,11 +698,14 @@ const textViewer = document.getElementById('textViewer');
 const textContentWrapper = document.getElementById('textContentWrapper');
 const closeModal = document.getElementById('closeModal');
 const modalTitle = document.getElementById('modalTitle');
-const pdfToolbar = document.getElementById('pdfToolbar');
-const pageInput = document.getElementById('pageInput');
 
-let currentPdfUrl = '';
-let isGoogleViewer = false;
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
 
 function renderBooks(filteredBooks) {
     booksGrid.innerHTML = '';
@@ -758,29 +713,41 @@ function renderBooks(filteredBooks) {
         booksGrid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#6b7280;padding:40px;font-weight:500;">Нічого не знайдено</p>';
         return;
     }
+
     filteredBooks.forEach(book => {
         const card = document.createElement('div');
         card.className = 'book-card';
-        
+
+        let pickerHtml = '';
         let actionButtons = '';
+
         if (book.type === 'pdf') {
+            pickerHtml = `
+                <div class="picker">
+                    <label>Сторінка
+                        <input type="number" min="1" inputmode="numeric" class="page-input" placeholder="напр. 45">
+                    </label>
+                    <label>Вправа
+                        <input type="text" class="ex-input" placeholder="напр. 12.3">
+                    </label>
+                </div>
+                <div class="hint"></div>
+            `;
             actionButtons = `
-                <button class="btn btn-primary" onclick="openPdf('${book.viewUrl}', '${book.title}', ${book.id})">
-                    Читати
-                </button>
-                <a href="${book.downloadUrl}" target="_blank" class="btn btn-download" title="Скачати">
+                <button class="btn btn-primary open-btn" data-id="${book.id}">Читати</button>
+                <a href="${escapeHtml(book.downloadUrl)}" target="_blank" class="btn btn-download" title="Скачати">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 </a>
             `;
         } else if (book.type === 'text') {
             actionButtons = `
-                <button class="btn btn-read" onclick="openText(\`${book.textContent.replace(/`/g, '\\`')}\`, '${book.title}', '${book.author}')">Читати онлайн</button>
+                <button class="btn btn-read open-text-btn" data-id="${book.id}">Читати онлайн</button>
             `;
         }
 
         let coverHtml = '';
         if (book.cover.startsWith('http')) {
-            coverHtml = `<img src="${book.cover}" alt="${book.title}" loading="lazy">`;
+            coverHtml = `<img src="${escapeHtml(book.cover)}" alt="${escapeHtml(book.title)}" loading="lazy">`;
         } else {
             coverHtml = `<span class="emoji-fallback">${book.cover}</span>`;
         }
@@ -789,8 +756,9 @@ function renderBooks(filteredBooks) {
             <div class="book-cover">${coverHtml}</div>
             <div class="book-info">
                 <span class="badge">${categories[book.category] || 'Інше'}</span>
-                <h3>${book.title}</h3>
-                <p class="author">${book.author}</p>
+                <h3>${escapeHtml(book.title)}</h3>
+                <p class="author">${escapeHtml(book.author)}</p>
+                ${pickerHtml}
                 <div class="actions">
                     ${actionButtons}
                 </div>
@@ -800,15 +768,37 @@ function renderBooks(filteredBooks) {
     });
 }
 
-function openPdf(url, title, id) {
+// Вибір сторінки або вправи для PDF
+function resolveTarget(card, book) {
+    const pageVal = card.querySelector('.page-input').value.trim();
+    const exVal = card.querySelector('.ex-input').value.trim();
+    const hint = card.querySelector('.hint');
+    hint.textContent = '';
+
+    let page = null;
+
+    if (exVal) {
+        const exPage = book.exercises && book.exercises[exVal];
+        if (exPage) {
+            page = exPage;
+        } else {
+            hint.textContent = `Вправу «${exVal}» ще не додано до індексу. Відкрито ${pageVal ? 'вибрану сторінку' : 'початок книги'}.`;
+        }
+    }
+
+    if (page === null && pageVal) {
+        const n = parseInt(pageVal, 10);
+        if (!isNaN(n) && n > 0) page = n;
+    }
+
+    return page;
+}
+
+function openPdf(url, title, page) {
     pdfViewer.style.display = 'block';
     textViewer.style.display = 'none';
-    pdfToolbar.style.display = 'flex';
-    pageInput.value = '';
-    isGoogleViewer = url.includes('docs.google.com');
-    currentPdfUrl = url;
-    pdfViewer.src = url;
-    modalTitle.textContent = title;
+    pdfViewer.src = page ? `${url}#page=${page}` : url;
+    modalTitle.textContent = page ? `${title} · стор. ${page}` : title;
     pdfModal.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
@@ -816,39 +806,56 @@ function openPdf(url, title, id) {
 function openText(content, title, author) {
     pdfViewer.style.display = 'none';
     pdfViewer.src = '';
-    pdfToolbar.style.display = 'none';
     textViewer.style.display = 'block';
-    
+
     textContentWrapper.innerHTML = `
-        <h2>${title}</h2>
-        <div class="text-author">${author}</div>
-        <p>${content}</p>
+        <h2>${escapeHtml(title)}</h2>
+        <div class="text-author">${escapeHtml(author)}</div>
+        <p>${escapeHtml(content)}</p>
     `;
-    
+
     modalTitle.textContent = title;
     pdfModal.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
 
-function jumpToPage() {
-    const page = pageInput.value;
-    if (!page) return;
-
-    if (isGoogleViewer) {
-        let baseUrl = currentPdfUrl.split('&page=')[0];
-        let newUrl = baseUrl + '&page=' + page;
-        pdfViewer.src = newUrl;
-    } else {
-        let baseUrl = currentPdfUrl.split('#')[0];
-        let newUrl = baseUrl + '#page=' + page;
-        pdfViewer.src = newUrl;
-    }
-}
-
-closeModal.addEventListener('click', () => {
+function closeReader() {
     pdfModal.classList.remove('active');
     pdfViewer.src = '';
     document.body.style.overflow = '';
+}
+
+closeModal.addEventListener('click', closeReader);
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && pdfModal.classList.contains('active')) closeReader();
+});
+
+// Делегування подій для кнопок у картках
+booksGrid.addEventListener('click', e => {
+    const openBtn = e.target.closest('.open-btn');
+    if (openBtn) {
+        const book = books.find(b => b.id === Number(openBtn.dataset.id));
+        if (!book) return;
+        const card = openBtn.closest('.book-card');
+        const page = resolveTarget(card, book);
+        openPdf(book.viewUrl, book.title, page);
+        return;
+    }
+
+    const textBtn = e.target.closest('.open-text-btn');
+    if (textBtn) {
+        const book = books.find(b => b.id === Number(textBtn.dataset.id));
+        if (book) openText(book.textContent, book.title, book.author);
+    }
+});
+
+// Enter у полях вибору відкриває книгу
+booksGrid.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.matches('.page-input, .ex-input')) {
+        const card = e.target.closest('.book-card');
+        const btn = card.querySelector('.open-btn');
+        if (btn) btn.click();
+    }
 });
 
 function filterBooks() {
