@@ -127,6 +127,25 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             type: "text",
             cover: "https://i.ibb.co/8L55yRB1/Curious-Cat-in-a-Pear-Tree.png",
             fileUrl: "baika3.txt"
+        },
+        /* --- ДОДАНІ ВІРШІ --- */
+        {
+            id: 12,
+            title: "І досі сниться: під горою...",
+            author: "Тарас Шевченко",
+            category: "poezia",
+            type: "text",
+            cover: "https://dovidka.biz.ua/wp-content/uploads/2023/08/i-dosi-snytsya-shevchenko-analiz.jpg",
+            fileUrl: "І ДОСІ СНИТЬСЯ: ПІД ГОРОЮ_1.txt"
+        },
+        {
+            id: 13,
+            title: "Ще не вмерла Україна",
+            author: "Павло Чубинський",
+            category: "poezia",
+            type: "text",
+            cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ1lDOjcLyasUIP24q_IL_KbXDnzsIGNsWhvr-xK8FaXAc2f-kqfPAj9gQ&s=10",
+            fileUrl: "ЩЕ НЕ ВМЕРЛА УКРАЇНА_1.txt" // Виправив одруківку з вашого запиту
         }
     ];
 
@@ -136,7 +155,8 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
         "zar-lit": "Зарубіжна література",
         history: "Історія",
         "eng-mova": "Англ мова",
-        bayky: "Байка"
+        bayky: "Байка",
+        poezia: "Поезія" // Додано категорію
     };
 
     var pdfDoc = null, pdfPage = 1, pdfjsPromise = null, renderTask = null;
@@ -204,8 +224,8 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             ".book-cover{height:220px;background:#ffffff;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:12px;flex-shrink:0;}",
             ".book-cover img{width:100%;height:100%;object-fit:contain;transition:transform 0.5s ease;cursor:zoom-in;}",
             ".book-card:hover .book-cover img{transform:scale(1.05);}",
-            ".book-card[data-cat='bayky'] .book-cover{background:#f3f4f6;padding:0;}",
-            ".book-card[data-cat='bayky'] .book-cover img{object-fit:cover;}",
+            ".book-card[data-cat='bayky'] .book-cover, .book-card[data-cat='poezia'] .book-cover{background:#f3f4f6;padding:0;}",
+            ".book-card[data-cat='bayky'] .book-cover img, .book-card[data-cat='poezia'] .book-cover img{object-fit:cover;}",
             "#imageViewer{display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,0.95);align-items:center;justify-content:center;padding:16px;cursor:zoom-out;}",
             "#imageViewer.active{display:flex;}",
             "#imageViewer img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;}",
@@ -273,6 +293,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             '      <option value="history">Історія</option>',
             '      <option value="eng-mova">Англ мова</option>',
             '      <option value="bayky">Байки</option>',
+            '      <option value="poezia">Стихи</option>', // Додано в меню
             '    </select>',
             '  </section>',
             '  <section class="books-grid" id="booksGrid"></section>',
@@ -360,7 +381,6 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
                         '<a href="' + escapeHtml(book.downloadUrl) + '" download class="btn btn-download" title="Скачати">' +
                         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></a>';
                 } else if (book.type === 'text') {
-                    // Використовуємо btn-primary замість btn-read для байок, щоб вони були фіолетовими
                     actionButtons = '<button class="btn btn-primary open-text-btn" data-id="' + book.id + '">Читати</button>';
                 }
 
@@ -619,7 +639,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
                         openText(text, tb.title, tb.author);
                     })
                     .catch(function () {
-                        textContentWrapper.innerHTML = '<p style="text-align:center; color:#ef4444; padding: 20px; font-weight: 500;">Не вдалося</p>';
+                        textContentWrapper.innerHTML = '<p style="text-align:center; color:#ef4444; padding: 20px; font-weight: 500;">Не вдалося завантажити текст</p>';
                     });
             }
         });
