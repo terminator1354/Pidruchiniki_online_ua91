@@ -40,9 +40,6 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
 (function () {
     'use strict';
 
-    // pageOffset - скільки сторінок PDF додати до номера сторінки з книги
-    //              (якщо стор. 13 з книги відкривається як PDF-сторінка 15, то pageOffset: 2)
-    // exWord     - слово, яким починається вправа у тексті PDF
     var BOOKS = [
         {
             id: 1,
@@ -52,9 +49,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             type: "pdf",
             cover: "https://detmir.com.ua/wa-data/public/shop/products/41/26/492641/images/153662/153662.970.jpg",
             downloadUrl: "ukrmova-6-klas-litvinova.pdf",
-            viewUrl: "ukrmova-6-klas-litvinova.pdf",
-            exWord: "Вправа",
-            pageOffset: 0
+            viewUrl: "ukrmova-6-klas-litvinova.pdf"
         },
         {
             id: 7,
@@ -64,9 +59,17 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             type: "pdf",
             cover: "https://shkola.in.ua/images/pictures/Pidruchnyky/6-klas/Ukrajinska-literatura/Ukrainska-literatura-6-klas-Kalynych-2023.jpg",
             downloadUrl: "ukralit-6-klas-kalynych.pdf",
-            viewUrl: "ukralit-6-klas-kalynych.pdf",
-            exWord: "Вправа",
-            pageOffset: 0
+            viewUrl: "ukralit-6-klas-kalynych.pdf"
+        },
+        {
+            id: 11,
+            title: "Зарубіжна література",
+            author: "Ніколенко О. та ін.",
+            category: "zar-lit",
+            type: "pdf",
+            cover: "https://www.bookletka.com/media/catalog/product/cache/1/image/9df78eab33525d08d6e5fb8d27136e95/_/6/_6__59.jpg",
+            downloadUrl: "zaralit-6-klas-nikolenko-2023.pdf",
+            viewUrl: "zaralit-6-klas-nikolenko-2023.pdf"
         },
         {
             id: 8,
@@ -76,9 +79,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             type: "pdf",
             cover: "https://aston.te.ua/userfiles/image/d_s6_vasilk_v_obkladinka_1_300.jpg",
             downloadUrl: "doslidzhuiemo-istoriiu-6-klas-vasylkiv.pdf",
-            viewUrl: "doslidzhuiemo-istoriiu-6-klas-vasylkiv.pdf",
-            exWord: "Вправа",
-            pageOffset: 0
+            viewUrl: "doslidzhuiemo-istoriiu-6-klas-vasylkiv.pdf"
         },
         {
             id: 9,
@@ -88,9 +89,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             type: "pdf",
             cover: "https://images.prom.ua/7740068871_w640_h640_7740068871.jpg",
             downloadUrl: "Workbook_kocta6.pdf",
-            viewUrl: "Workbook_kocta6.pdf",
-            exWord: "Exercise",
-            pageOffset: 0
+            viewUrl: "Workbook_kocta6.pdf"
         },
         {
             id: 10,
@@ -100,9 +99,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             type: "pdf",
             cover: "https://images.prom.ua/5116504206_w640_h640_kosta-prepare-workbook.jpg",
             downloadUrl: "Workbook_kocta6.pdf",
-            viewUrl: "Workbook_kocta6.pdf",
-            exWord: "Exercise",
-            pageOffset: 0
+            viewUrl: "Workbook_kocta6.pdf"
         },
         {
             id: 3,
@@ -136,16 +133,15 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
     var CATEGORIES = {
         "ukr-mova": "Укр мова",
         "ukr-lit": "Укр-літ",
+        "zar-lit": "Зарубіжна література",
         history: "Історія",
         "eng-mova": "Англ мова",
         bayky: "Байка"
     };
 
-    // ---------- PDF.js state ----------
     var pdfDoc = null, pdfPage = 1, pdfjsPromise = null, renderTask = null;
-    var currentBook = null;   // книга, що зараз відкрита
-    var pageTextCache = {};   // текст сторінок для пошуку вправ
-    var exSearchId = 0;       // щоб скасовувати застарілий пошук
+    var pageTextCache = {};   
+    var exSearchId = 0;       
 
     function loadPdfJs() {
         if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
@@ -174,10 +170,6 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
-    }
-
-    function escapeRegex(str) {
-        return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
     function buildApp() {
@@ -209,16 +201,11 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             ".books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;margin-bottom:64px;align-items:stretch;}",
             ".book-card{background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column;transition:all 0.3s ease;position:relative;height:100%;}",
             ".book-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-xl);border-color:transparent;}",
-
-            /* Підручники: білий фон, object-fit contain */
             ".book-cover{height:220px;background:#ffffff;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:12px;flex-shrink:0;}",
             ".book-cover img{width:100%;height:100%;object-fit:contain;transition:transform 0.5s ease;cursor:zoom-in;}",
             ".book-card:hover .book-cover img{transform:scale(1.05);}",
-
-            /* Байки: сірий фон, картинка повністю заповнює блок */
             ".book-card[data-cat='bayky'] .book-cover{background:#f3f4f6;padding:0;}",
             ".book-card[data-cat='bayky'] .book-cover img{object-fit:cover;}",
-
             "#imageViewer{display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,0.95);align-items:center;justify-content:center;padding:16px;cursor:zoom-out;}",
             "#imageViewer.active{display:flex;}",
             "#imageViewer img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;}",
@@ -249,7 +236,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             "#pdfCanvasWrap{display:none;flex:1;overflow:auto;background:#374151;text-align:center;padding:12px;-webkit-overflow-scrolling:touch;}",
             ".pdf-nav{position:sticky;top:0;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;padding:8px;margin-bottom:8px;background:rgba(31,41,55,0.95);border-radius:10px;z-index:2;}",
             ".pdf-nav input{width:70px;padding:6px;border-radius:6px;border:none;text-align:center;font-size:1rem;}",
-            ".pdf-nav #pdfExInput{width:110px;}",
+            ".pdf-nav #pdfExInput{width:90px;}",
             "#pdfTotal{color:#ffffff;font-size:1rem;font-weight:600;}",
             "#pdfExStatus{color:#ffffff;font-size:0.85rem;width:100%;text-align:center;min-height:1em;}",
             ".pdf-btn{background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:1.1rem;cursor:pointer;}",
@@ -284,9 +271,10 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             '    <select id="categoryFilter">',
             '      <option value="ukr-mova">Укр мова</option>',
             '      <option value="ukr-lit">Укр-літ</option>',
+            '      <option value="zar-lit">Зарубіжна література</option>',
             '      <option value="history">Історія</option>',
             '      <option value="eng-mova">Англ мова</option>',
-            '      <option value="bayky">Байки</option>',
+            '      <option value="bayky">Байка</option>',
             '    </select>',
             '  </section>',
             '  <section class="books-grid" id="booksGrid"></section>',
@@ -305,7 +293,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             '      <input type="number" id="pdfPageInput" min="1" inputmode="numeric">',
             '      <span id="pdfTotal"></span>',
             '      <button class="pdf-btn" id="pdfNext" aria-label="Вперед">›</button>',
-            '      <input type="text" id="pdfExInput" inputmode="numeric" placeholder="Вправа">',
+            '      <input type="number" id="pdfExInput" min="1" inputmode="numeric" placeholder="Вправа">',
             '      <button class="pdf-btn pdf-btn-sm" id="pdfExBtn">Знайти вправу</button>',
             '      <div id="pdfExStatus"></div>',
             '    </div>',
@@ -370,8 +358,9 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
 
                 if (book.type === 'pdf') {
                     pickerHtml = '<div class="picker"><label>Сторінка:<input type="number" min="1" inputmode="numeric" class="page-input" placeholder=""></label></div>';
+                    // Додано атрибут download сюди
                     actionButtons = '<button class="btn btn-primary open-btn" data-id="' + book.id + '">Читати</button>' +
-                        '<a href="' + escapeHtml(book.downloadUrl) + '" target="_blank" class="btn btn-download" title="Скачати">' +
+                        '<a href="' + escapeHtml(book.downloadUrl) + '" download class="btn btn-download" title="Скачати">' +
                         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></a>';
                 } else if (book.type === 'text') {
                     actionButtons = '<button class="btn btn-read open-text-btn" data-id="' + book.id + '">Читати</button>';
@@ -405,7 +394,6 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             return !isNaN(n) && n > 0 ? n : null;
         }
 
-        // ---------- PDF rendering via PDF.js ----------
         function renderPage(num) {
             if (!pdfDoc) return Promise.resolve();
             if (renderTask) {
@@ -441,7 +429,6 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             });
         }
 
-        // ---------- Пошук вправи за текстом ----------
         function getPageText(num) {
             if (pageTextCache[num] !== undefined) return Promise.resolve(pageTextCache[num]);
             return pdfDoc.getPage(num).then(function (p) {
@@ -453,8 +440,8 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             });
         }
 
-        function findExercisePage(n, word, searchId) {
-            var re = new RegExp(escapeRegex(word) + '\\s*№?\\s*' + n + '(?!\\d)', 'i');
+        function findExercisePage(n, searchId) {
+            var re = new RegExp('Вправа\\s*№?\\s*' + n + '(?!\\d)', 'i');
             var total = pdfDoc.numPages;
             var current = 1;
 
@@ -472,24 +459,23 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
 
         function searchExercise() {
             if (!pdfDoc) return;
-            var word = (currentBook && currentBook.exWord) || 'Вправа';
             var n = parseInt(pdfExInput.value, 10);
             if (isNaN(n) || n < 1) {
-                pdfExStatus.textContent = 'Введіть номер: ' + word;
+                pdfExStatus.textContent = 'Введіть номер вправи';
                 return;
             }
             var searchId = ++exSearchId;
             pdfExStatus.textContent = 'Пошук...';
             pdfExBtn.disabled = true;
 
-            findExercisePage(n, word, searchId).then(function (num) {
+            findExercisePage(n, searchId).then(function (num) {
                 if (searchId !== exSearchId) return;
                 pdfExBtn.disabled = false;
                 if (num) {
                     pdfExStatus.textContent = '';
                     renderPage(num);
                 } else {
-                    pdfExStatus.textContent = word + ' ' + n + ' не знайдено';
+                    pdfExStatus.textContent = 'Вправу ' + n + ' не знайдено';
                 }
             }).catch(function () {
                 if (searchId !== exSearchId) return;
@@ -498,13 +484,12 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             });
         }
 
-        function openPdf(book, page) {
-            currentBook = book;
+        function openPdf(url, title, page) {
             pdfViewer.style.display = 'none';
             pdfViewer.src = '';
             textViewer.style.display = 'none';
             pdfCanvasWrap.style.display = 'block';
-            modalTitle.textContent = page ? book.title + ' - стор. ' + page : book.title;
+            modalTitle.textContent = page ? title + ' - стор. ' + page : title;
             pdfModal.classList.add('active');
             document.body.style.overflow = 'hidden';
 
@@ -512,17 +497,13 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             pageTextCache = {};
             pdfExStatus.textContent = '';
             pdfExInput.value = '';
-            pdfExInput.placeholder = book.exWord || 'Вправа';
             if (pdfDoc) { try { pdfDoc.destroy(); } catch (e) {} pdfDoc = null; }
 
-            var offset = book.pageOffset || 0;
-
             loadPdfJs()
-                .then(function (lib) { return lib.getDocument(book.viewUrl).promise; })
+                .then(function (lib) { return lib.getDocument(url).promise; })
                 .then(function (doc) {
                     pdfDoc = doc;
-                    var wanted = (page || 1) + offset;
-                    var target = Math.min(Math.max(wanted, 1), doc.numPages);
+                    var target = Math.min(Math.max(page || 1, 1), doc.numPages);
                     return renderPage(target);
                 })
                 .catch(function () {
@@ -552,7 +533,6 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             pdfCanvasWrap.style.display = 'none';
             exSearchId++;
             pageTextCache = {};
-            currentBook = null;
             if (renderTask) { try { renderTask.cancel(); } catch (e) {} renderTask = null; }
             if (pdfDoc) { try { pdfDoc.destroy(); } catch (e) {} pdfDoc = null; }
             document.body.style.overflow = '';
@@ -615,7 +595,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
                 var book = BOOKS.find(function (b) { return b.id === Number(openBtn.dataset.id); });
                 if (!book) return;
                 var card = openBtn.closest('.book-card');
-                openPdf(book, resolveTarget(card));
+                openPdf(book.viewUrl, book.title, resolveTarget(card));
                 return;
             }
 
