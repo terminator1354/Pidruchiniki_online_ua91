@@ -145,7 +145,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             category: "poezia",
             type: "text",
             cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ1lDOjcLyasUIP24q_IL_KbXDnzsIGNsWhvr-xK8FaXAc2f-kqfPAj9gQ&s=10",
-            fileUrl: "ЩЕ НЕ ВМЕРЛА УКРАЇНА_1.txt" // Виправив одруківку з вашого запиту
+            fileUrl: "shevchenko-ne-vmerla-ukraina.txt"
         }
     ];
 
@@ -156,12 +156,12 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
         history: "Історія",
         "eng-mova": "Англ мова",
         bayky: "Байка",
-        poezia: "Поезія" // Додано категорію
+        poezia: "Стих"
     };
 
     var pdfDoc = null, pdfPage = 1, pdfjsPromise = null, renderTask = null;
-    var pageTextCache = {};   
-    var exSearchId = 0;       
+    var pageTextCache = {};
+    var exSearchId = 0;
 
     function loadPdfJs() {
         if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
@@ -293,7 +293,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             '      <option value="history">Історія</option>',
             '      <option value="eng-mova">Англ мова</option>',
             '      <option value="bayky">Байки</option>',
-            '      <option value="poezia">Стихи</option>', // Додано в меню
+            '      <option value="poezia">Стихи</option>',
             '    </select>',
             '  </section>',
             '  <section class="books-grid" id="booksGrid"></section>',
