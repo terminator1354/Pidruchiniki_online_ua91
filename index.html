@@ -52,6 +52,17 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             viewUrl: "ukrmova-6-klas-litvinova.pdf"
         },
         {
+            id: 14,
+            title: "Технології",
+            author: "Ходзицька І. Ю.",
+            category: "tech",
+            type: "pdf",
+            cover: "https://shkola.in.ua/images/pictures/Pidruchnyky/6-klas/Technolohii/Technolohii-6-klas-Khodzytska-2023.jpg",
+            downloadUrl: "6klas_tekhnolohii_khodzytska_2023.pdf",
+            viewUrl: "6klas_tekhnolohii_khodzytska_2023.pdf",
+            startPage: 6 // Тут вказано сторінку, яка обведена на вашому скріншоті
+        },
+        {
             id: 7,
             title: "Українська література",
             author: "Калинич О.",
@@ -150,12 +161,13 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
 
     var CATEGORIES = {
         "ukr-mova": "Укр мова",
+        "tech": "Технології",
         "ukr-lit": "Укр-літ",
         "zar-lit": "Зарубіжна література",
         history: "Історія",
         "eng-mova": "Англ мова",
         bayky: "Байка",
-        poezia: "Стих"
+        poezia: "Стихи"
     };
 
     var pdfDoc = null, pdfPage = 1, pdfjsPromise = null, renderTask = null;
@@ -287,6 +299,7 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
             '    </div>',
             '    <select id="categoryFilter">',
             '      <option value="ukr-mova">Укр мова</option>',
+            '      <option value="tech">Технології</option>',
             '      <option value="ukr-lit">Укр-літ</option>',
             '      <option value="zar-lit">Зарубіжна література</option>',
             '      <option value="history">Історія</option>',
@@ -612,7 +625,11 @@ p { font-size: 1.5rem; color: #9ca3af; margin: 0; }
                 var book = BOOKS.find(function (b) { return b.id === Number(openBtn.dataset.id); });
                 if (!book) return;
                 var card = openBtn.closest('.book-card');
-                openPdf(book.viewUrl, book.title, resolveTarget(card));
+                
+                // Перевіряємо, чи вказана стартова сторінка для книги (наприклад, для Технологій)
+                var targetPage = resolveTarget(card) || book.startPage || null;
+                
+                openPdf(book.viewUrl, book.title, targetPage);
                 return;
             }
 
